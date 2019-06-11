@@ -17,7 +17,12 @@
 		"commands": [
 			{
 				"command": "extension.previewHandlebars",
-				"title": "Preview Handlebars"
+				"title": "Preview Handlebars",
+				"when": "editorLangId == handlebars"
+			},
+			{
+				"command": "extension.generateHandlebarsConfig",
+				"title": "Generate config file for Handlebars Preview"
 			}
 		]
 	},

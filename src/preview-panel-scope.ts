@@ -2,7 +2,14 @@ import { WebviewPanel, TextEditor, TextDocumentChangeEvent, ViewColumn, Uri, wor
 import { promises, FSWatcher, watch, existsSync } from 'fs';
 import { load as loadDocument } from "cheerio";
 import * as path from "path";
-import { compile } from 'handlebars';
+import { compile, registerPartial } from 'handlebars';
+
+interface Context {
+    data: Object,
+    partials: {
+        [name: string]: string;
+    }
+}
 
 export class PreviewPanelScope {
     private readonly contextWatcher: FSWatcher;
@@ -31,8 +38,6 @@ export class PreviewPanelScope {
                 }
             });
         });
-
-        
     }
 
     public async update() {
@@ -50,11 +55,7 @@ export class PreviewPanelScope {
     async workspaceDocumentChanged(event: TextDocumentChangeEvent) {
         if (event.document === this.editor.document || event.document.fileName === this.contextFileName) {
             this.closePanelIfTemplateDocumentClosed();
-            const html = await getCompiledHtml(this.editor, this.contextFileName);
-            
-            if (html) {
-                this.panel.webview.html = html;
-            }
+            await this.update();
         }
     }
 
@@ -65,27 +66,47 @@ export class PreviewPanelScope {
     }
 }
 
-function getContextFileName(templateFileName: string) {
-    const contextFileName = `${templateFileName}.js`;
-    const dataFileName = `${templateFileName}.json`;
+function getContextFileName(templateFileName: string): string {
+    const contextFileName = `${templateFileName}.json`;
 
     if (existsSync(contextFileName)) {
-        window.showWarningMessage('JS context files not yet supported');
-        throw false;
+        return contextFileName;
     }
-    
-	if (!existsSync(dataFileName)) {
-		const errorMessage = `Please create a file called ${dataFileName} with your test data`;
-		window.showErrorMessage(errorMessage);
-		throw false;
-	}
 
-	return dataFileName;
+    const errorMessage = `Please create a file called ${contextFileName} with your test data`;
+    window.showErrorMessage(errorMessage);
+    throw false;
 }
 
-async function getCompiledHtml(templateEditor: TextEditor, dataFileName: string): Promise<string | false> {
-    const dataFileContents = await promises.readFile(dataFileName, 'utf8');
-	const data = JSON.parse(dataFileContents);
+function validateContext(context: Context, fileName: string) {
+    if (!context.hasOwnProperty('data')) {
+        window.showErrorMessage(`The context file ${path.basename(fileName)} is missing the key 'data'.`);
+        throw false;
+    }
+
+    if (typeof context.data !== 'object') {
+        window.showErrorMessage(`The context file ${path.basename(fileName)} contains bad 'data' key.`);
+        throw false;
+    }
+
+    if ('partials' in context && typeof context.partials !== 'object') {
+        window.showErrorMessage(`The context file ${path.basename(fileName)} contains bad 'partials' key.`);
+        throw false;
+    }
+}
+
+async function getCompiledHtml(templateEditor: TextEditor, contextFile: string): Promise<string | false> {
+    var contextJson = await promises.readFile(contextFile, 'utf8');
+    const context: Context = JSON.parse(contextJson);
+
+    validateContext(context, contextFile);
+
+    for (const partialName in context.partials) {
+        const partialAbsolutePath = path.resolve(path.dirname(templateEditor.document.fileName), context.partials[partialName]);
+        const partialTemplate = await promises.readFile(partialAbsolutePath, 'utf8')
+        registerPartial(partialName, partialTemplate);
+    }
+
 	const template = templateEditor.document.getText();
 
 	const $ = loadDocument(template);
@@ -101,13 +122,13 @@ async function getCompiledHtml(templateEditor: TextEditor, dataFileName: string)
         });
 
         try {
-            return compiledTemplate(data);
+            return compiledTemplate(context.data);
         } catch (err) {
-            window.showErrorMessage(`Error rendering handlebars template`, err);
+            window.showErrorMessage(`Error rendering handlebars template: ${JSON.stringify(err)}`);
             return false;
         }
     } catch (err) {
-        window.showErrorMessage(`Error compiling handlebars template`, err);
+        window.showErrorMessage(`Error compiling handlebars template: ${JSON.stringify(err)}`);
         return false;
     }
 }

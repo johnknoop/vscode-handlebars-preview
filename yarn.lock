@@ -16,6 +16,13 @@
     esutils "^2.0.2"
     js-tokens "^4.0.0"
 
+"@types/cheerio@^0.22.11":
+  version "0.22.11"
+  resolved "https://registry.yarnpkg.com/@types/cheerio/-/cheerio-0.22.11.tgz#61c0facf9636d14ba5f77fc65ed8913aa845d717"
+  integrity sha512-x0X3kPbholdJZng9wDMhb2swvUi3UYRNAuWAmIPIWlfgAJZp//cql/qblE7181Mg7SjWVwq6ldCPCLn5AY/e7w==
+  dependencies:
+    "@types/node" "*"
+
 "@types/mocha@^2.2.42":
   version "2.2.48"
   resolved "https://registry.yarnpkg.com/@types/mocha/-/mocha-2.2.48.tgz#3523b126a0b049482e1c3c11877460f76622ffab"
@@ -27,6 +34,11 @@
 "@types/node@^10.12.21":
   version "10.14.8"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-10.14.8.tgz#fe444203ecef1162348cd6deb76c62477b2cc6e9"
+
+"@types/vscode@^1.35.0":
+  version "1.35.0"
+  resolved "https://registry.yarnpkg.com/@types/vscode/-/vscode-1.35.0.tgz#b17526ef1e9df5cbf7253be6765a33fd518a2304"
+  integrity sha512-Iyliuu8Hv4qy4TEaevQzChh9UsTEcuaKdcHXBbvJnoJSF5Td2yNENOrPK+vuOaXJJBhQZb4BNJKOxt6caaQR8A==
 
 agent-base@4, agent-base@^4.1.0:
   version "4.3.0"
