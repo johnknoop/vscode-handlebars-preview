@@ -1,42 +1,7 @@
 import { commands, window, ExtensionContext, workspace } from 'vscode';
-import * as path from "path";
-import { FSWatcher, watch, promises } from 'fs';
 import { PreviewPanelScope } from './preview-panel-scope';
-import { registerPartial, unregisterPartial } from "handlebars";
-import generateConfig from "./generate-config";
-
-const partialsWatchers: {
-	[workspace: string]: FSWatcher;
-} = {};
 
 const panels: PreviewPanelScope[] = [];
-
-function closePartialsWatchers() {
-	for (const watcher in partialsWatchers) {
-		partialsWatchers[watcher].close();
-	}
-}
-
-function watchWorkspaceFoldersForPartials() {
-	closePartialsWatchers();
-
-	if (!workspace.workspaceFolders) {
-		return;
-	}
-
-	// todo: använd workspace.createFileSystemWatcher istället
-	workspace.workspaceFolders.forEach(x => {
-		partialsWatchers[x.name] = watch(x.uri.fsPath, {
-			recursive: true
-		}, async (e, filename) => {
-			if (['.hbs', '.handlebars'].includes(path.extname(filename))) {
-				for (const panel of panels) {
-					await panel.update();
-				}
-			}
-		});
-	});
-}
 
 export function activate(context: ExtensionContext) {
 	workspace.onDidChangeTextDocument(async e => {
@@ -44,8 +9,6 @@ export function activate(context: ExtensionContext) {
 			await panel.workspaceDocumentChanged(e)
 		}
 	});
-
-	watchWorkspaceFoldersForPartials();
 
 	const generateContextCommand = commands.registerTextEditorCommand('extension.generateHandlebarsContext', async () => {
 
@@ -60,8 +23,6 @@ export function activate(context: ExtensionContext) {
 			return;
 		}
 
-		workspace.onDidChangeWorkspaceFolders(_ => { watchWorkspaceFoldersForPartials() });
-
 		try {
 			const panel = new PreviewPanelScope(window.activeTextEditor);
 			await panel.update();
@@ -69,11 +30,17 @@ export function activate(context: ExtensionContext) {
 		} catch (error) { }
 	});
 
+	const watcher = workspace.createFileSystemWatcher('**/*.{hbs,handlebars}');
+
 	context.subscriptions.push(previewCommand, generateContextCommand, generateConfigCommand);
+
+	context.subscriptions.push(watcher.onDidChange(async () => {
+		for (const panel of panels) {
+			await panel.update();
+		}
+	}));
 }
 
 export function deactivate() {
 	panels.forEach(x => x.dispose());
-
-	closePartialsWatchers();
 }

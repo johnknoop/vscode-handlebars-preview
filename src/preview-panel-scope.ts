@@ -1,8 +1,8 @@
-import { WebviewPanel, TextEditor, TextDocumentChangeEvent, ViewColumn, Uri, workspace, window } from 'vscode';
-import { promises, FSWatcher, watch, existsSync } from 'fs';
+import { WebviewPanel, TextEditor, TextDocumentChangeEvent, ViewColumn, Uri, workspace, window, FileSystemWatcher } from 'vscode';
+import { promises, existsSync } from 'fs';
 import { load as loadDocument } from "cheerio";
 import * as path from "path";
-import { compile, registerPartial } from 'handlebars';
+import { compile } from 'handlebars';
 
 interface Context {
     data: Object,
@@ -12,7 +12,7 @@ interface Context {
 }
 
 export class PreviewPanelScope {
-    private readonly contextWatcher: FSWatcher;
+    private readonly contextWatcher: FileSystemWatcher;
     private readonly panel: WebviewPanel;
     private readonly contextFileName: string;
 
@@ -26,10 +26,11 @@ export class PreviewPanelScope {
         });
         
 		this.panel.onDidDispose(() => {
-			this.contextWatcher.close();
+			this.contextWatcher.dispose();
 		});
 
-        this.contextWatcher = watch(contextFileName, (event, filename) => {
+        this.contextWatcher = workspace.createFileSystemWatcher(contextFileName);
+        this.contextWatcher.onDidChange(e => {
             this.closePanelIfTemplateDocumentClosed();
 
             getCompiledHtml(this.editor, this.contextFileName).then(html => {
@@ -37,7 +38,7 @@ export class PreviewPanelScope {
                     this.panel.webview.html = html;
                 }
             });
-        });
+        })
     }
 
     public async update() {
@@ -98,13 +99,13 @@ function validateContext(context: Context, fileName: string) {
 async function getCompiledHtml(templateEditor: TextEditor, contextFile: string): Promise<string | false> {
     var contextJson = await promises.readFile(contextFile, 'utf8');
     const context: Context = JSON.parse(contextJson);
-
+    const partials= {};
     validateContext(context, contextFile);
 
     for (const partialName in context.partials) {
         const partialAbsolutePath = path.resolve(path.dirname(templateEditor.document.fileName), context.partials[partialName]);
         const partialTemplate = await promises.readFile(partialAbsolutePath, 'utf8')
-        registerPartial(partialName, partialTemplate);
+        partials[partialName] = partialTemplate;
     }
 
 	const template = templateEditor.document.getText();
@@ -122,7 +123,9 @@ async function getCompiledHtml(templateEditor: TextEditor, contextFile: string):
         });
 
         try {
-            return compiledTemplate(context.data);
+            return compiledTemplate(context.data, {
+                partials: partials
+            });
         } catch (err) {
             window.showErrorMessage(`Error rendering handlebars template: ${JSON.stringify(err)}`);
             return false;
