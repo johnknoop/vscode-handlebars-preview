@@ -2,6 +2,12 @@
 	"name": "handlebars-preview",
 	"displayName": "Handlebars Preview",
 	"description": "Preview Handlebars files in VS Code with custom data",
+	"author": {
+		"name": "John Knoop, Greenbyte",
+		"email": "john@greenbyte.com",
+		"url": "https://www.greenbyte.com"
+	},
+	"publisher": "Greenbyte",
 	"version": "0.0.1",
 	"engines": {
 		"vscode": "^1.35.0"
@@ -9,6 +15,11 @@
 	"categories": [
 		"Other"
 	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/johnknoop/vscode-handlebars-preview"
+	},
+	"icon": "./media/preview-hbs.png",
 	"activationEvents": [
 		"onCommand:extension.previewHandlebars"
 	],
@@ -17,12 +28,9 @@
 		"commands": [
 			{
 				"command": "extension.previewHandlebars",
-				"title": "Preview Handlebars",
-				"when": "editorLangId == handlebars"
-			},
-			{
-				"command": "extension.generateHandlebarsConfig",
-				"title": "Generate config file for Handlebars Preview"
+				"title": "Handlebars: Preview",
+				"when": "editorLangId == handlebars",
+				"icon": "./media/preview-hbs.png"
 			}
 		]
 	},
@@ -37,10 +45,9 @@
 		"@types/cheerio": "^0.22.11",
 		"@types/mocha": "^2.2.42",
 		"@types/node": "^10.12.21",
-		"@types/vscode": "^1.35.0",
 		"tslint": "^5.12.1",
 		"typescript": "^3.3.1",
-		"vscode": "^1.1.28"
+		"vscode": "^1.1.34"
 	},
 	"dependencies": {
 		"cheerio": "^1.0.0-rc.3",

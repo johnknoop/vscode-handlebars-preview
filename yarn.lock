@@ -35,11 +35,6 @@
   version "10.14.8"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-10.14.8.tgz#fe444203ecef1162348cd6deb76c62477b2cc6e9"
 
-"@types/vscode@^1.35.0":
-  version "1.35.0"
-  resolved "https://registry.yarnpkg.com/@types/vscode/-/vscode-1.35.0.tgz#b17526ef1e9df5cbf7253be6765a33fd518a2304"
-  integrity sha512-Iyliuu8Hv4qy4TEaevQzChh9UsTEcuaKdcHXBbvJnoJSF5Td2yNENOrPK+vuOaXJJBhQZb4BNJKOxt6caaQR8A==
-
 agent-base@4, agent-base@^4.1.0:
   version "4.3.0"
   resolved "https://registry.yarnpkg.com/agent-base/-/agent-base-4.3.0.tgz#8165f01c436009bccad0b1d122f05ed770efc6ee"
@@ -789,9 +784,10 @@ vscode-test@^0.4.1:
     http-proxy-agent "^2.1.0"
     https-proxy-agent "^2.2.1"
 
-vscode@^1.1.28:
+vscode@^1.1.34:
   version "1.1.34"
   resolved "https://registry.yarnpkg.com/vscode/-/vscode-1.1.34.tgz#3aba5d2f3a9d43f4e798f6933339fe5fcfb782c6"
+  integrity sha512-GuT3tCT2N5Qp26VG4C+iGmWMgg/MuqtY5G5TSOT3U/X6pgjM9LFulJEeqpyf6gdzpI4VyU3ZN/lWPo54UFPuQg==
   dependencies:
     glob "^7.1.2"
     mocha "^4.0.1"
