@@ -42,14 +42,35 @@
 			}
 		],
 		"menus": {
-			"editor/title/context": [
+			"explorer/context": [
+				{
+					"command": "extension.generateContext",
+					"when": "resourceLangId == handlebars",
+					"group": "Handlebars"
+				}
+			],
+			"editor/title": [
 				{
 					"command": "extension.previewHandlebars",
-					"when": "editorLangId == handlebars"
+					"when": "resourceLangId == handlebars",
+					"group": "Handlebars"
 				},
 				{
 					"command": "extension.generateContext",
-					"when": "editorLangId == handlebars"
+					"when": "resourceLangId == handlebars",
+					"group": "Handlebars"
+				}
+			],
+			"editor/title/context": [
+				{
+					"command": "extension.previewHandlebars",
+					"when": "resourceLangId == handlebars",
+					"group": "Handlebars"
+				},
+				{
+					"command": "extension.generateContext",
+					"when": "resourceLangId == handlebars",
+					"group": "Handlebars"
 				}
 			]
 		}
