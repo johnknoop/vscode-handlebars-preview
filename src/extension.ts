@@ -4,15 +4,41 @@ import partialNameGenerator from './partial-name-generator';
 import { promises } from 'fs';
 import { registerPartial } from 'handlebars';
 import generateContext from "./context-generator";
+import { Subject } from "rxjs";
+import { debounceTime, groupBy, flatMap } from "rxjs/operators";
 
 const panels: PreviewPanelScope[] = [];
 const partialsRegisteredByWorkspace = {};
+
+export interface UserMessage {
+	type: 'Error' | 'Warning' | 'Info'
+	message: string;
+}
+
+export const showUserMessage = new Subject<UserMessage>();
 
 function partialsRegistered(workspaceRoot: string) {
 	return workspaceRoot in partialsRegisteredByWorkspace;
 }
 
 export function activate(context: ExtensionContext) {
+	showUserMessage
+		.pipe(groupBy(x => x.type))
+		.pipe(flatMap(x => x.pipe(debounceTime(1000))))
+		.subscribe(msg => {
+			switch (msg.type) {
+				case 'Error':
+					window.showErrorMessage(msg.message);
+					break;
+				case 'Warning':
+					window.showWarningMessage(msg.message);
+					break;
+				case 'Info':
+					window.showInformationMessage(msg.message);
+					break;
+			}
+		})
+
 	workspace.onDidChangeTextDocument(async e => {
 		for (const panel of panels) {
 			await panel.workspaceDocumentChanged(e)

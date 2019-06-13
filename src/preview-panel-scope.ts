@@ -3,6 +3,7 @@ import { promises, existsSync } from 'fs';
 import { load as loadDocument } from "cheerio";
 import * as path from "path";
 import { compile, TemplateDelegate } from 'handlebars';
+import { showUserMessage } from "./extension";
 
 export class PreviewPanelScope {
     private readonly contextWatcher: FileSystemWatcher;
@@ -68,7 +69,10 @@ function getContextFileName(templateFileName: string): string {
     const contextFileName = `${templateFileName}.json`;
 
     if (!existsSync(contextFileName)) {
-        window.showInformationMessage(`Tip: create a file named ${path.basename(contextFileName)} with your test data`);
+        showUserMessage.next({
+            type: 'Info',
+            message: `Tip: create a file named ${path.basename(contextFileName)} with your test data`
+        });
     }
 
     return contextFileName;
@@ -78,7 +82,10 @@ function renderTemplate(template: TemplateDelegate, templateContext) {
     try {
         return template(templateContext);
     } catch (err) {
-        window.showErrorMessage(`Error rendering handlebars template: ${JSON.stringify(err)}`);
+        showUserMessage.next({
+            type: 'Error',
+            message: `Error rendering handlebars template: ${JSON.stringify(err)}`
+        });
         return false;
     }
 }
@@ -94,7 +101,10 @@ async function getCompiledHtml(templateEditor: TextEditor, contextFile: string):
         return repathImages(rendered || '', templateEditor);
 
     } catch (err) {
-        window.showErrorMessage(`Error compiling handlebars template: ${JSON.stringify(err)}`);
+        showUserMessage.next({
+            type: 'Error',
+            message: `Error compiling handlebars template: ${JSON.stringify(err)}`
+        });
         return false;
     }
 }
