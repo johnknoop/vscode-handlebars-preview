@@ -1,4 +1,4 @@
-import { commands, window, ExtensionContext, workspace, WorkspaceFolder } from 'vscode';
+import { commands, window, ExtensionContext, workspace, WorkspaceFolder, RelativePattern } from 'vscode';
 import { PreviewPanelScope } from './preview-panel-scope';
 import partialNameGenerator from './partial-name-generator';
 import { promises } from 'fs';
@@ -21,36 +21,47 @@ export function activate(context: ExtensionContext) {
 	// Future: support partial overrides using workspace.getConfiguration
 
 	const previewCommand = commands.registerTextEditorCommand('extension.previewHandlebars', async () => {
-		if (!window.activeTextEditor) {
+		const editor = window.activeTextEditor;
+
+		if (!editor) {
 			return;
 		}
 
-		const workspaceRoot = workspace.getWorkspaceFolder(window.activeTextEditor.document.uri);
+		const existingPanel = panels.find(x => x.editorFilePath() === editor.document.uri.fsPath);
+		
+		if (existingPanel) {
+			existingPanel.disposePreviewPanel();
+			panels.splice(panels.indexOf(existingPanel), 1);
+		}
+
+		const workspaceRoot = workspace.getWorkspaceFolder(editor.document.uri);
 
 		if (!workspaceRoot) {
 			return;
 		}
 
 		if (!partialsRegistered(workspaceRoot.uri.fsPath)) {
-			await findAndRegisterPartials();
+			await findAndRegisterPartials(workspaceRoot);
 		}
 
 		try {
-			const panel = new PreviewPanelScope(window.activeTextEditor);
+			const panel = new PreviewPanelScope(editor);
 			await panel.update();
 			panels.push(panel);
-		} catch (error) { }
+		} catch (error) { 
+			
+		}
 	});
 
 	context.subscriptions.push(previewCommand,...watchForPartials());
 }
 
 export function deactivate() {
-	panels.forEach(x => x.dispose());
+	panels.forEach(x => x.disposePreviewPanel());
 }
 
-async function findAndRegisterPartials() {
-	const hbsFiles = await workspace.findFiles('**/*.{hbs,handlebars}');
+async function findAndRegisterPartials(workspaceFolder: WorkspaceFolder) {
+	const hbsFiles = await workspace.findFiles(new RelativePattern(workspaceFolder, '**/*.{hbs,handlebars}'));
 	const knownPartials = {};
 
 	for (const hbs of hbsFiles) {
@@ -62,12 +73,8 @@ async function findAndRegisterPartials() {
 	}
 	
 	registerPartial(knownPartials);
-	
-	const workspaceFolders = workspace.workspaceFolders;
 
-	workspaceFolders && workspaceFolders.forEach(f => {
-		partialsRegisteredByWorkspace[f.uri.fsPath] = true;
-	});
+	partialsRegisteredByWorkspace[workspaceFolder.uri.fsPath] = true;
 }
 
 function* watchForPartials() {

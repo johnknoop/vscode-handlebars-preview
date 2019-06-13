@@ -31,7 +31,11 @@ export class PreviewPanelScope {
                     this.panel.webview.html = html;
                 }
             });
-        })
+        });
+    }
+
+    public editorFilePath() {
+        return this.editor.document.uri.fsPath;
     }
 
     public async update() {
@@ -42,7 +46,7 @@ export class PreviewPanelScope {
         }
     }
 
-    dispose() {
+    disposePreviewPanel() {
         this.panel.dispose();
     }
 
@@ -55,7 +59,7 @@ export class PreviewPanelScope {
 
     private closePanelIfTemplateDocumentClosed() {
         if (this.editor.document.isClosed) {
-            this.dispose();
+            this.disposePreviewPanel();
         }
     }
 }
@@ -63,17 +67,11 @@ export class PreviewPanelScope {
 function getContextFileName(templateFileName: string): string {
     const contextFileName = `${templateFileName}.json`;
 
-    if (existsSync(contextFileName)) {
-        return contextFileName;
+    if (!existsSync(contextFileName)) {
+        window.showInformationMessage(`Tip: create a file named ${path.basename(contextFileName)} with your test data`);
     }
 
-    const errorMessage = `Please create a file called ${contextFileName} with your test data`;
-    window.showErrorMessage(errorMessage);
-    throw false;
-}
-
-function sleep(ms: number) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return contextFileName;
 }
 
 function renderTemplate(template: TemplateDelegate, templateContext) {
@@ -86,20 +84,14 @@ function renderTemplate(template: TemplateDelegate, templateContext) {
 }
 
 async function getCompiledHtml(templateEditor: TextEditor, contextFile: string): Promise<string | false> {
-    var contextJson = await promises.readFile(contextFile, 'utf8');
-    const context = JSON.parse(contextJson);
+    const context = await getContextData(contextFile);
     const template = templateEditor.document.getText();
 
-    const $ = loadDocument(template);
-    repathImages($, templateEditor);
-
-    const hbs = $.html({
-        decodeEntities: false
-    });
-
     try {
-        const compiledTemplate = compile(hbs);
-        return renderTemplate(compiledTemplate, context);
+        const compiledTemplate = compile(template);
+        const rendered = renderTemplate(compiledTemplate, context);
+        
+        return repathImages(rendered || '', templateEditor);
 
     } catch (err) {
         window.showErrorMessage(`Error compiling handlebars template: ${JSON.stringify(err)}`);
@@ -107,12 +99,27 @@ async function getCompiledHtml(templateEditor: TextEditor, contextFile: string):
     }
 }
 
-function repathImages($: CheerioStatic, templateEditor: TextEditor) {
+async function getContextData(contextFile: string) {
+    try {
+        var contextJson = await promises.readFile(contextFile, 'utf8');
+        return JSON.parse(contextJson);
+    } catch (err) {
+        return {};
+    }
+}
+
+function repathImages(html: string, templateEditor: TextEditor) {
+    const $ = loadDocument(html);
+
     $('img').each((index, element) => {
         const newSrc = templateEditor.document.uri.with({
             scheme: 'vscode-resource',
             path: path.join(path.dirname(templateEditor.document.fileName), element.attribs['src']),
         }).toString();
         element.attribs['src'] = newSrc;
+    });
+
+    return $.html({
+        decodeEntities: false
     });
 }
