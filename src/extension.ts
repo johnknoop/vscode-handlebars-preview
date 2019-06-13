@@ -3,6 +3,7 @@ import { PreviewPanelScope } from './preview-panel-scope';
 import partialNameGenerator from './partial-name-generator';
 import { promises } from 'fs';
 import { registerPartial } from 'handlebars';
+import generateContext from "./context-generator";
 
 const panels: PreviewPanelScope[] = [];
 const partialsRegisteredByWorkspace = {};
@@ -17,6 +18,17 @@ export function activate(context: ExtensionContext) {
 			await panel.workspaceDocumentChanged(e)
 		}
 	});
+
+	const generateContextCommand = commands.registerTextEditorCommand('extension.generateContext', async (args) => {
+		const editor = window.activeTextEditor;
+
+		if (!editor) {
+			return;
+		}
+
+		await generateContext(editor.document.fileName);
+	});
+
 
 	// Future: support partial overrides using workspace.getConfiguration
 
@@ -53,7 +65,7 @@ export function activate(context: ExtensionContext) {
 		}
 	});
 
-	context.subscriptions.push(previewCommand,...watchForPartials());
+	context.subscriptions.push(previewCommand,...watchForPartials(), generateContextCommand);
 }
 
 export function deactivate() {

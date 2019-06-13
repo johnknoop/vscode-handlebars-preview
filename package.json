@@ -8,7 +8,7 @@
 		"url": "https://www.greenbyte.com"
 	},
 	"publisher": "Greenbyte",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"engines": {
 		"vscode": "^1.35.0"
 	},
@@ -21,7 +21,8 @@
 	},
 	"icon": "media/preview-hbs.png",
 	"activationEvents": [
-		"onCommand:extension.previewHandlebars"
+		"onCommand:extension.previewHandlebars",
+		"onCommand:extension.generateContext"
 	],
 	"main": "./out/extension.js",
 	"preview": true,
@@ -32,8 +33,26 @@
 				"title": "Handlebars: Preview",
 				"when": "editorLangId == handlebars",
 				"icon": "media/preview-hbs.png"
+			},
+			{
+				"command": "extension.generateContext",
+				"title": "Handlebars: Generate context file",
+				"when": "editorLangId == handlebars",
+				"icon": "media/preview-hbs.png"
 			}
-		]
+		],
+		"menus": {
+			"editor/title/context": [
+				{
+					"command": "extension.previewHandlebars",
+					"when": "editorLangId == handlebars"
+				},
+				{
+					"command": "extension.generateContext",
+					"when": "editorLangId == handlebars"
+				}
+			]
+		}
 	},
 	"scripts": {
 		"vscode:prepublish": "yarn run compile",
