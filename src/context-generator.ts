@@ -1,4 +1,4 @@
-import { workspace, window, ViewColumn, Uri } from 'vscode';
+import { window, ViewColumn, Uri } from 'vscode';
 import { existsSync, promises } from 'fs';
 
 function extractJson(template: string): string {
@@ -36,6 +36,7 @@ function extractJson(template: string): string {
 
 export default async function (activeTemplateFilename: string) {
     if (existsSync(`${activeTemplateFilename}.json`)) {
+        window.showErrorMessage("This template already has a context file");
         return;
     }
 
