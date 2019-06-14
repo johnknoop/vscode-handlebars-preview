@@ -4,40 +4,20 @@ import partialNameGenerator from './partial-name-generator';
 import { promises } from 'fs';
 import { registerPartial } from 'handlebars';
 import generateContext from "./context-generator";
-import { Subject } from "rxjs";
-import { debounceTime, groupBy, flatMap } from "rxjs/operators";
+import { Subject, race } from "rxjs";
+import { debounceTime, groupBy, flatMap, filter, take, repeat } from "rxjs/operators";
 
 const panels: PreviewPanelScope[] = [];
 const partialsRegisteredByWorkspace = {};
 
-export interface UserMessage {
-	type: 'Error' | 'Warning' | 'Info'
-	message: string;
-}
-
-export const showUserMessage = new Subject<UserMessage>();
+export const showErrorMessage = new Subject<string | null>();
 
 function partialsRegistered(workspaceRoot: string) {
 	return workspaceRoot in partialsRegisteredByWorkspace;
 }
 
 export function activate(context: ExtensionContext) {
-	showUserMessage
-		.pipe(groupBy(x => x.type))
-		.pipe(flatMap(x => x.pipe(debounceTime(1000))))
-		.subscribe(msg => {
-			switch (msg.type) {
-				case 'Error':
-					window.showErrorMessage(msg.message);
-					break;
-				case 'Warning':
-					window.showWarningMessage(msg.message);
-					break;
-				case 'Info':
-					window.showInformationMessage(msg.message);
-					break;
-			}
-		})
+	hookupErrorMessages();
 
 	workspace.onDidChangeTextDocument(async e => {
 		for (const panel of panels) {
@@ -92,6 +72,18 @@ export function activate(context: ExtensionContext) {
 	});
 
 	context.subscriptions.push(previewCommand,...watchForPartials(), generateContextCommand);
+}
+
+function hookupErrorMessages() {
+	const errorMessages = showErrorMessage.pipe(filter(x => typeof x === 'string'), debounceTime(1000));
+	const resets = showErrorMessage.pipe(filter(x => x === null));
+	race(errorMessages, resets)
+		.pipe(take(1)).pipe(repeat())
+		.subscribe(msg => {
+			if (typeof msg === 'string') {
+				window.showErrorMessage(msg);
+			}
+		});
 }
 
 export function deactivate() {
