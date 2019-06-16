@@ -8,7 +8,7 @@
 		"url": "https://www.greenbyte.com"
 	},
 	"publisher": "Greenbyte",
-	"version": "0.0.1",
+	"version": "0.0.3",
 	"engines": {
 		"vscode": "^1.35.0"
 	},
@@ -21,7 +21,8 @@
 	},
 	"icon": "media/preview-hbs.png",
 	"activationEvents": [
-		"onCommand:extension.previewHandlebars"
+		"onCommand:extension.previewHandlebars",
+		"onCommand:extension.generateContext"
 	],
 	"main": "./out/extension.js",
 	"preview": true,
@@ -30,10 +31,47 @@
 			{
 				"command": "extension.previewHandlebars",
 				"title": "Handlebars: Preview",
-				"when": "editorLangId == handlebars",
-				"icon": "media/preview-hbs.png"
+				"when": "editorLangId == handlebars"
+			},
+			{
+				"command": "extension.generateContext",
+				"title": "Handlebars: Generate context file",
+				"when": "editorLangId == handlebars"
 			}
-		]
+		],
+		"menus": {
+			"explorer/context": [
+				{
+					"command": "extension.generateContext",
+					"when": "resourceLangId == handlebars",
+					"group": "Handlebars"
+				}
+			],
+			"editor/title": [
+				{
+					"command": "extension.previewHandlebars",
+					"when": "resourceLangId == handlebars",
+					"group": "Handlebars"
+				},
+				{
+					"command": "extension.generateContext",
+					"when": "resourceLangId == handlebars",
+					"group": "Handlebars"
+				}
+			],
+			"editor/title/context": [
+				{
+					"command": "extension.previewHandlebars",
+					"when": "resourceLangId == handlebars",
+					"group": "Handlebars"
+				},
+				{
+					"command": "extension.generateContext",
+					"when": "resourceLangId == handlebars",
+					"group": "Handlebars"
+				}
+			]
+		}
 	},
 	"scripts": {
 		"vscode:prepublish": "yarn run compile",
@@ -54,6 +92,7 @@
 	},
 	"dependencies": {
 		"cheerio": "^1.0.0-rc.3",
-		"handlebars": "^4.1.2"
+		"handlebars": "^4.1.2",
+		"rxjs": "^6.5.2"
 	}
 }

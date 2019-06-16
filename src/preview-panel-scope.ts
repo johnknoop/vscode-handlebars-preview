@@ -3,6 +3,7 @@ import { promises, existsSync } from 'fs';
 import { load as loadDocument } from "cheerio";
 import * as path from "path";
 import { compile, TemplateDelegate } from 'handlebars';
+import { showErrorMessage } from "./extension";
 
 export class PreviewPanelScope {
     private readonly contextWatcher: FileSystemWatcher;
@@ -76,9 +77,13 @@ function getContextFileName(templateFileName: string): string {
 
 function renderTemplate(template: TemplateDelegate, templateContext) {
     try {
-        return template(templateContext);
+        const html = template(templateContext);
+
+        showErrorMessage.next(null);
+
+        return html;
     } catch (err) {
-        window.showErrorMessage(`Error rendering handlebars template: ${JSON.stringify(err)}`);
+        showErrorMessage.next(`Error rendering handlebars template: ${JSON.stringify(err)}`);
         return false;
     }
 }
@@ -94,7 +99,7 @@ async function getCompiledHtml(templateEditor: TextEditor, contextFile: string):
         return repathImages(rendered || '', templateEditor);
 
     } catch (err) {
-        window.showErrorMessage(`Error compiling handlebars template: ${JSON.stringify(err)}`);
+        showErrorMessage.next(`Error compiling handlebars template: ${JSON.stringify(err)}`);
         return false;
     }
 }

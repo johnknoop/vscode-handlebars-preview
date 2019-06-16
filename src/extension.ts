@@ -3,20 +3,38 @@ import { PreviewPanelScope } from './preview-panel-scope';
 import partialNameGenerator from './partial-name-generator';
 import { promises } from 'fs';
 import { registerPartial } from 'handlebars';
+import generateContext from "./context-generator";
+import { Subject, race } from "rxjs";
+import { debounceTime, groupBy, flatMap, filter, take, repeat } from "rxjs/operators";
 
 const panels: PreviewPanelScope[] = [];
 const partialsRegisteredByWorkspace = {};
+
+export const showErrorMessage = new Subject<string | null>();
 
 function partialsRegistered(workspaceRoot: string) {
 	return workspaceRoot in partialsRegisteredByWorkspace;
 }
 
 export function activate(context: ExtensionContext) {
+	hookupErrorMessages();
+
 	workspace.onDidChangeTextDocument(async e => {
 		for (const panel of panels) {
 			await panel.workspaceDocumentChanged(e)
 		}
 	});
+
+	const generateContextCommand = commands.registerTextEditorCommand('extension.generateContext', async (args) => {
+		const editor = window.activeTextEditor;
+
+		if (!editor) {
+			return;
+		}
+
+		await generateContext(editor.document.fileName);
+	});
+
 
 	// Future: support partial overrides using workspace.getConfiguration
 
@@ -53,7 +71,19 @@ export function activate(context: ExtensionContext) {
 		}
 	});
 
-	context.subscriptions.push(previewCommand,...watchForPartials());
+	context.subscriptions.push(previewCommand,...watchForPartials(), generateContextCommand);
+}
+
+function hookupErrorMessages() {
+	const errorMessages = showErrorMessage.pipe(filter(x => typeof x === 'string'), debounceTime(1000));
+	const resets = showErrorMessage.pipe(filter(x => x === null));
+	race(errorMessages, resets)
+		.pipe(take(1)).pipe(repeat())
+		.subscribe(msg => {
+			if (typeof msg === 'string') {
+				window.showErrorMessage(msg);
+			}
+		});
 }
 
 export function deactivate() {
