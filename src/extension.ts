@@ -1,20 +1,13 @@
-import { commands, window, ExtensionContext, workspace, WorkspaceFolder, RelativePattern } from 'vscode';
+import { commands, window, ExtensionContext, workspace, WorkspaceFolder, RelativePattern, Uri } from 'vscode';
 import { PreviewPanelScope } from './preview-panel-scope';
-import partialNameGenerator from './partial-name-generator';
-import { promises } from 'fs';
-import { registerPartial } from 'handlebars';
-import generateContext from "./context-generator";
+import generateContext from "./context-generator/context-generator";
 import { Subject, race } from "rxjs";
-import { debounceTime, groupBy, flatMap, filter, take, repeat } from "rxjs/operators";
+import { debounceTime, filter, take, repeat } from "rxjs/operators";
+import { partialsRegistered, findAndRegisterPartials, watchForPartials } from './partials';
 
 const panels: PreviewPanelScope[] = [];
-const partialsRegisteredByWorkspace = {};
-
 export const showErrorMessage = new Subject<string | null>();
 
-function partialsRegistered(workspaceRoot: string) {
-	return workspaceRoot in partialsRegisteredByWorkspace;
-}
 
 export function activate(context: ExtensionContext) {
 	hookupErrorMessages();
@@ -25,9 +18,9 @@ export function activate(context: ExtensionContext) {
 		}
 	});
 
-	const generateContextCommand = commands.registerTextEditorCommand('extension.generateContext', async (args) => {
+	const generateContextFromEditorCommand = commands.registerTextEditorCommand('extension.generateContextFromEditor', async () => {
 		const editor = window.activeTextEditor;
-
+		
 		if (!editor) {
 			return;
 		}
@@ -35,8 +28,10 @@ export function activate(context: ExtensionContext) {
 		await generateContext(editor.document.fileName);
 	});
 
+	const generateContextFromExplorerCommand = commands.registerCommand('extension.generateContextFromExplorer', async (uri:Uri) => {
+		await generateContext(uri.fsPath);
+	});
 
-	// Future: support partial overrides using workspace.getConfiguration
 
 	const previewCommand = commands.registerTextEditorCommand('extension.previewHandlebars', async () => {
 		const editor = window.activeTextEditor;
@@ -71,7 +66,7 @@ export function activate(context: ExtensionContext) {
 		}
 	});
 
-	context.subscriptions.push(previewCommand,...watchForPartials(), generateContextCommand);
+	context.subscriptions.push(previewCommand,...watchForPartials(panels), generateContextFromEditorCommand, generateContextFromExplorerCommand);
 }
 
 function hookupErrorMessages() {
@@ -90,59 +85,3 @@ export function deactivate() {
 	panels.forEach(x => x.disposePreviewPanel());
 }
 
-async function findAndRegisterPartials(workspaceFolder: WorkspaceFolder) {
-	const hbsFiles = await workspace.findFiles(new RelativePattern(workspaceFolder, '**/*.{hbs,handlebars}'));
-	const knownPartials = {};
-
-	for (const hbs of hbsFiles) {
-		const workspaceFolder = workspace.getWorkspaceFolder(hbs);
-		if (workspaceFolder) {
-			knownPartials[partialNameGenerator(hbs.fsPath, workspaceFolder.uri.fsPath)] =
-				await promises.readFile(hbs.fsPath, 'utf8');
-		}
-	}
-	
-	registerPartial(knownPartials);
-
-	partialsRegisteredByWorkspace[workspaceFolder.uri.fsPath] = true;
-}
-
-function* watchForPartials() {
-	const watcher = workspace.createFileSystemWatcher('**/*.{hbs,handlebars}');
-
-	yield watcher.onDidCreate(async (e) => {
-		const workspaceFolder = workspace.getWorkspaceFolder(e);
-
-		if (!workspaceFolder) {
-			return;
-		}
-
-		const partial = {
-			[partialNameGenerator(
-				e.fsPath, workspaceFolder.uri.fsPath)]: await promises.readFile(e.fsPath, 'utf8')
-		} as any;
-
-		registerPartial(partial);
-
-		for (const panel of panels) {
-			await panel.update();
-		}
-	});
-
-	yield watcher.onDidChange(async (e) => {
-		const workspaceFolder = workspace.getWorkspaceFolder(e);
-
-		if (!workspaceFolder) {
-			return;
-		}
-
-		registerPartial(partialNameGenerator(
-			e.fsPath, workspaceFolder.uri.fsPath),
-			await promises.readFile(e.fsPath, 'utf8')
-		);
-
-		for (const panel of panels) {
-			await panel.update();
-		}
-	});
-}

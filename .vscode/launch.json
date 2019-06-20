@@ -17,19 +17,42 @@
 			],
 			"preLaunchTask": "npm: watch"
 		},
+		// {
+		// 	"name": "Extension Tests",
+		// 	"type": "extensionHost",
+		// 	"request": "launch",
+		// 	"runtimeExecutable": "${execPath}",
+		// 	"args": [
+		// 		"--extensionDevelopmentPath=${workspaceFolder}",
+		// 		"--extensionTestsPath=${workspaceFolder}/out/test"
+		// 	],
+		// 	"outFiles": [
+		// 		"${workspaceFolder}/out/test/**/*.js"
+		// 	],
+		// 	"preLaunchTask": "npm: watch"
+		// },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Run parser",
+            "program": "${workspaceFolder}/src/context-generator/context-generator.ts",
+            "preLaunchTask": "npm: compile",
+            "outFiles": [
+                "${workspaceFolder}/out/**/*.js"
+            ]
+        }
 		{
-			"name": "Extension Tests",
-			"type": "extensionHost",
+			"name": "Debug (ts-node)",
+			"type": "node",
 			"request": "launch",
-			"runtimeExecutable": "${execPath}",
-			"args": [
-				"--extensionDevelopmentPath=${workspaceFolder}",
-				"--extensionTestsPath=${workspaceFolder}/out/test"
-			],
-			"outFiles": [
-				"${workspaceFolder}/out/test/**/*.js"
-			],
-			"preLaunchTask": "npm: watch"
+			"args": ["${workspaceRoot}/src/context-generator/context-generator.ts"],
+			"runtimeArgs": ["-r", "ts-node/register"],
+			"cwd": "${workspaceRoot}",
+			"protocol": "inspector",
+			"internalConsoleOptions": "openOnSessionStart",
+			"env": {
+				"TS_NODE_IGNORE": "false"
+			}
 		}
 	]
 }

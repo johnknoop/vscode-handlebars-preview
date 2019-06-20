@@ -8,7 +8,7 @@
 		"url": "https://www.greenbyte.com"
 	},
 	"publisher": "Greenbyte",
-	"version": "0.0.3",
+	"version": "1.0.0-beta.1",
 	"engines": {
 		"vscode": "^1.35.0"
 	},
@@ -22,7 +22,8 @@
 	"icon": "media/preview-hbs.png",
 	"activationEvents": [
 		"onCommand:extension.previewHandlebars",
-		"onCommand:extension.generateContext"
+		"onCommand:extension.generateContextFromEditor",
+		"onCommand:extension.generateContextFromExplorer"
 	],
 	"main": "./out/extension.js",
 	"preview": true,
@@ -30,32 +31,22 @@
 		"commands": [
 			{
 				"command": "extension.previewHandlebars",
-				"title": "Handlebars: Preview",
-				"when": "editorLangId == handlebars"
+				"title": "Handlebars: Preview"
 			},
 			{
-				"command": "extension.generateContext",
-				"title": "Handlebars: Generate context file",
-				"when": "editorLangId == handlebars"
+				"command": "extension.generateContextFromEditor",
+				"title": "Handlebars: Generate context file"
+			},
+			{
+				"command": "extension.generateContextFromExplorer",
+				"title": "Handlebars: Generate context file"
 			}
 		],
 		"menus": {
 			"explorer/context": [
 				{
-					"command": "extension.generateContext",
-					"when": "resourceLangId == handlebars",
-					"group": "Handlebars"
-				}
-			],
-			"editor/title": [
-				{
-					"command": "extension.previewHandlebars",
-					"when": "resourceLangId == handlebars",
-					"group": "Handlebars"
-				},
-				{
-					"command": "extension.generateContext",
-					"when": "resourceLangId == handlebars",
+					"command": "extension.generateContextFromExplorer",
+					"when": "resourceFilename =~ /\\.(hbs|handlebars)$/",
 					"group": "Handlebars"
 				}
 			],
@@ -66,7 +57,7 @@
 					"group": "Handlebars"
 				},
 				{
-					"command": "extension.generateContext",
+					"command": "extension.generateContextFromEditor",
 					"when": "resourceLangId == handlebars",
 					"group": "Handlebars"
 				}
@@ -83,8 +74,8 @@
 	},
 	"devDependencies": {
 		"@types/cheerio": "^0.22.11",
-		"@types/mocha": "^2.2.42",
 		"@types/node": "^10.12.21",
+		"ts-node": "^8.3.0",
 		"tslint": "^5.12.1",
 		"typescript": "^3.3.1",
 		"vsce": "^1.63.0",
