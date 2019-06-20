@@ -2,28 +2,28 @@ import { extractJson } from "./extract-json";
 
 let hbs = `{{#>Partials/layout}}
 
-  {{> header}}
+{{> header}}
 
-  {{title}}
-  {{author.name}}
+{{title}}
+{{author.name}}
 
-  {{#each reviewers}}				1
-	  {{firstName}}
-	  {{lastName}}
-	  {{email}}
+{{#each reviewers}}          
+	{{firstName}}
+	{{lastName}}
+	{{email}}
 
-	  {{#each deepArray}}			2
-			{{ banana }}
-	  {{/each}}
+	{{# each deepArray}}		
+		  {{ banana }}
+	{{/ each}}
 
-	  {{ orange }}
-  {{/each}}
+	{{ orange }}
+{{ /each }}
 
-  {{signature}}
-  
-  {{#each otherthings}}				3
-	  {{firstName}}
-  {{/each}}
+{{signature}}
+
+{{#each otherthings as  |value key| }}		
+	{{firstName}}
+{{/each}}
 
 {{/Partials/layout}}`;
 
@@ -36,7 +36,7 @@ class ArrayScope implements Scope {
 	type: 'root' | 'subscope' = 'subscope';
 	protected body = '';
 	childScopes: ArrayScope[] = [];
-	
+
 
 	constructor(readonly identifier?: string) {
 		this.scanScope();
@@ -45,14 +45,14 @@ class ArrayScope implements Scope {
 	private scanScope() {
 		let nextStop: RegExpExecArray | null;
 
-		while ((nextStop = /{{(#|\/)each( \w+)?.*}}/.exec(hbs)) !== null) {
-			//const [ _, controlChar, arrayName ] = nextStop;
+		while ((nextStop = /{{\s*(#|\/)\s*each\s*(\w+)?.*}}/.exec(hbs)) !== null) {
+			const [, controlChar, arrayName] = nextStop;
 
-			if (nextStop[1] === '#') {
+			if (controlChar === '#') {
 				// New scope
 				this.body = this.body + hbs.substring(0, nextStop.index);
 				hbs = hbs.slice(nextStop.index + 1);
-				const nameOfNewChildScope = nextStop[2].trim();
+				const nameOfNewChildScope = arrayName.trim();
 				this.childScopes.push(new ArrayScope(nameOfNewChildScope));
 			} else {
 				// Close the scope
