@@ -35,7 +35,7 @@
             "type": "node",
             "request": "launch",
             "name": "Run parser",
-            "program": "${workspaceFolder}/src/test/parser.ts",
+            "program": "${workspaceFolder}/src/parser.ts",
             "preLaunchTask": "npm: compile",
             "outFiles": [
                 "${workspaceFolder}/out/**/*.js"
@@ -45,7 +45,7 @@
 			"name": "Debug (ts-node)",
 			"type": "node",
 			"request": "launch",
-			"args": ["${workspaceRoot}/src/test/parser.ts"],
+			"args": ["${workspaceRoot}/src/parser.ts"],
 			"runtimeArgs": ["-r", "ts-node/register"],
 			"cwd": "${workspaceRoot}",
 			"protocol": "inspector",
