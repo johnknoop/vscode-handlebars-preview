@@ -20,12 +20,12 @@ export default function (fieldName: string): number | boolean | string {
 }
 
 const numericTells = [
-	'age', 'number', 'length', 'height', 'width', 'size',
+	'(?<!mess)age', 'number', 'length', 'height', 'width', 'size',
 	'index', 'order', 'ordinal'
 ];
-// todo: Message matchar age
+
 function tryNumeric(fieldName: string): boolean {
-	return numericTells.some(x => fieldName.toLowerCase().endsWith(x));
+	return numericTells.some(x => fieldName.match(new RegExp(`${x}$`, 'i')));
 }
 
 function tryBoolean(fieldName: string): boolean {
