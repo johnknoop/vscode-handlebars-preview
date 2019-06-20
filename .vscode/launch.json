@@ -35,7 +35,7 @@
             "type": "node",
             "request": "launch",
             "name": "Run parser",
-            "program": "${workspaceFolder}/src/parser.ts",
+            "program": "${workspaceFolder}/src/context-generator/context-generator.ts",
             "preLaunchTask": "npm: compile",
             "outFiles": [
                 "${workspaceFolder}/out/**/*.js"
@@ -45,7 +45,7 @@
 			"name": "Debug (ts-node)",
 			"type": "node",
 			"request": "launch",
-			"args": ["${workspaceRoot}/src/parser.ts"],
+			"args": ["${workspaceRoot}/src/context-generator/context-generator.ts"],
 			"runtimeArgs": ["-r", "ts-node/register"],
 			"cwd": "${workspaceRoot}",
 			"protocol": "inspector",
