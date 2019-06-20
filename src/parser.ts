@@ -6,11 +6,13 @@ let hbs = `{{#>Partials/layout}}
 
 {{title}}
 {{author.name}}
+{{isConfirmed}}
 
 {{#each reviewers}}          
 	{{firstName}}
 	{{lastName}}
 	{{email}}
+	{{age}}
 
 	{{# each deepArray}}		
 		  {{ banana }}

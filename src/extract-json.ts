@@ -1,3 +1,5 @@
+import generateSampleValue from "./sample-data-generator";
+
 export function extractJson(hbs: string): Object {
     const result = {};
     const expressions = hbs.match(/{{{?\s?[^>#/].*?\s?}}}?/g);
@@ -14,7 +16,7 @@ export function extractJson(hbs: string): Object {
                 tokens.forEach((token, index) => {
                     if (!(token in scope)) {
                         scope[token] = index === tokens.length - 1
-                            ? ""
+                            ? generateSampleValue(token)
                             : {};
                     }
                     scope = scope[token];
