@@ -116,13 +116,15 @@ async function getContextData(contextFile: string) {
 function repathImages(html: string, templateEditor: TextEditor) {
     const $ = loadDocument(html);
 
-    $('img').each((index, element) => {
-        const newSrc = templateEditor.document.uri.with({
-            scheme: 'vscode-resource',
-            path: path.join(path.dirname(templateEditor.document.fileName), element.attribs['src']),
-        }).toString();
-        element.attribs['src'] = newSrc;
-    });
+    $('img')
+        .filter((i, elm) => !elm.attribs['src'].toLowerCase().startsWith('http'))
+        .each((index, element) => {
+            const newSrc = templateEditor.document.uri.with({
+                scheme: 'vscode-resource',
+                path: path.join(path.dirname(templateEditor.document.fileName), element.attribs['src']),
+            }).toString();
+            element.attribs['src'] = newSrc;
+        });
 
     return $.html({
         decodeEntities: false
