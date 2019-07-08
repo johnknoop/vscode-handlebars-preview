@@ -22,8 +22,7 @@
 	"icon": "media/preview-hbs.png",
 	"activationEvents": [
 		"onCommand:extension.previewHandlebars",
-		"onCommand:extension.generateContextFromEditor",
-		"onCommand:extension.generateContextFromExplorer"
+		"onCommand:extension.generateContextFile"
 	],
 	"main": "./out/extension.js",
 	"preview": true,
@@ -34,18 +33,14 @@
 				"title": "Handlebars: Preview"
 			},
 			{
-				"command": "extension.generateContextFromEditor",
-				"title": "Handlebars: Generate context file"
-			},
-			{
-				"command": "extension.generateContextFromExplorer",
+				"command": "extension.generateContextFile",
 				"title": "Handlebars: Generate context file"
 			}
 		],
 		"menus": {
 			"explorer/context": [
 				{
-					"command": "extension.generateContextFromExplorer",
+					"command": "extension.generateContextFile",
 					"when": "resourceFilename =~ /\\.(hbs|handlebars)$/",
 					"group": "Handlebars"
 				}
@@ -57,7 +52,7 @@
 					"group": "Handlebars"
 				},
 				{
-					"command": "extension.generateContextFromEditor",
+					"command": "extension.generateContextFile",
 					"when": "resourceLangId == handlebars",
 					"group": "Handlebars"
 				}

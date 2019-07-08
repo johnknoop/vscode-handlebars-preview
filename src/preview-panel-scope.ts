@@ -1,4 +1,4 @@
-import { WebviewPanel, TextEditor, TextDocumentChangeEvent, ViewColumn, Uri, workspace, window, FileSystemWatcher, ExtensionContext } from 'vscode';
+import { WebviewPanel, TextEditor, TextDocumentChangeEvent, ViewColumn, Uri, workspace, window, FileSystemWatcher, ExtensionContext, TextDocument } from 'vscode';
 import { promises, existsSync } from 'fs';
 import { load as loadDocument } from "cheerio";
 import * as path from "path";
@@ -10,13 +10,13 @@ export class PreviewPanelScope {
     private readonly panel: WebviewPanel;
     private readonly contextFileName: string;
 
-    constructor(private readonly editor: TextEditor) {
-        const contextFileName = getContextFileName(editor.document.fileName);
+    constructor(private readonly document: TextDocument) {
+        const contextFileName = getContextFileName(document.fileName);
 
         this.contextFileName = contextFileName;
 
-        this.panel = window.createWebviewPanel("preview", `Preview: ${path.basename(editor.document.fileName)}`, ViewColumn.Two, {
-            localResourceRoots: workspace.workspaceFolders!.map(p => p.uri).concat(Uri.file(path.dirname(editor.document.fileName)))
+        this.panel = window.createWebviewPanel("preview", `Preview: ${path.basename(document.fileName)}`, ViewColumn.Two, {
+            localResourceRoots: workspace.workspaceFolders!.map(p => p.uri).concat(Uri.file(path.dirname(document.fileName)))
         });
 
         this.panel.onDidDispose(() => {
@@ -25,7 +25,7 @@ export class PreviewPanelScope {
 
         this.contextWatcher = workspace.createFileSystemWatcher(contextFileName);
         this.contextWatcher.onDidChange(e => {
-            getCompiledHtml(this.editor, this.contextFileName).then(html => {
+            getCompiledHtml(this.document, this.contextFileName).then(html => {
                 if (html) {
                     this.panel.webview.html = html;
                 }
@@ -34,11 +34,11 @@ export class PreviewPanelScope {
     }
 
     editorFilePath() {
-        return this.editor.document.uri.fsPath;
+        return this.document.uri.fsPath;
     }
 
     async update() {
-        const html = await getCompiledHtml(this.editor, this.contextFileName);
+        const html = await getCompiledHtml(this.document, this.contextFileName);
 
         if (html) {
             this.panel.webview.html = html;
@@ -50,7 +50,7 @@ export class PreviewPanelScope {
     }
 
     async workspaceDocumentChanged(event: TextDocumentChangeEvent) {
-        if (event.document === this.editor.document || event.document.fileName === this.contextFileName) {
+        if (event.document === this.document || event.document.fileName === this.contextFileName) {
             await this.update();
         }
     }
@@ -79,15 +79,15 @@ function renderTemplate(template: TemplateDelegate, templateContext) {
     }
 }
 
-async function getCompiledHtml(templateEditor: TextEditor, contextFile: string): Promise<string | false> {
+async function getCompiledHtml(templateDocument: TextDocument, contextFile: string): Promise<string | false> {
     const context = await getContextData(contextFile);
-    const template = templateEditor.document.getText();
+    const template = templateDocument.getText();
 
     try {
         const compiledTemplate = compile(template);
         const rendered = renderTemplate(compiledTemplate, context);
         
-        return repathImages(rendered || '', templateEditor);
+        return repathImages(rendered || '', templateDocument);
 
     } catch (err) {
         showErrorMessage.next(`Error compiling handlebars template: ${JSON.stringify(err)}`);
@@ -104,15 +104,15 @@ async function getContextData(contextFile: string) {
     }
 }
 
-function repathImages(html: string, templateEditor: TextEditor) {
+function repathImages(html: string, templateDocument: TextDocument) {
     const $ = loadDocument(html);
 
     $('img')
         .filter((i, elm) => !elm.attribs['src'].toLowerCase().startsWith('http'))
         .each((index, element) => {
-            const newSrc = templateEditor.document.uri.with({
+            const newSrc = templateDocument.uri.with({
                 scheme: 'vscode-resource',
-                path: path.join(path.dirname(templateEditor.document.fileName), element.attribs['src']),
+                path: path.join(path.dirname(templateDocument.fileName), element.attribs['src']),
             }).toString();
             element.attribs['src'] = newSrc;
         });

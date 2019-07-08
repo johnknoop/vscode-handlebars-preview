@@ -1,4 +1,4 @@
-import { commands, window, ExtensionContext, workspace, WorkspaceFolder, RelativePattern, Uri } from 'vscode';
+import { commands, window, ExtensionContext, workspace, WorkspaceFolder, RelativePattern, Uri, TextDocument } from 'vscode';
 import { PreviewPanelScope } from './preview-panel-scope';
 import generateContext from "./context-generator/context-generator";
 import { Subject, race } from "rxjs";
@@ -29,55 +29,76 @@ export function activate(context: ExtensionContext) {
 		}
 	});
 
-	const generateContextFromEditorCommand = commands.registerTextEditorCommand('extension.generateContextFromEditor', async () => {
-		const editor = window.activeTextEditor;
-		
-		if (!editor) {
-			return;
+	const generateContextFromExplorerCommand = commands.registerCommand('extension.generateContextFile', async (uri: Uri) => {
+		const templateUri = uri
+			? uri
+			: window && window.activeTextEditor && window.activeTextEditor.document.languageId === 'handlebars'
+				? window.activeTextEditor.document.uri
+				: null;
+
+		if (templateUri) {
+			await openPreviewPanelByUri(templateUri);
 		}
 
-		await generateContext(editor.document.fileName);
-	});
-
-	const generateContextFromExplorerCommand = commands.registerCommand('extension.generateContextFromExplorer', async (uri:Uri) => {
 		await generateContext(uri.fsPath);
 	});
 
+	const previewCommand = commands.registerCommand('extension.previewHandlebars', async (uri: Uri) => {
+		const templateUri = uri
+			? uri
+			: window && window.activeTextEditor && window.activeTextEditor.document.languageId === 'handlebars'
+				? window.activeTextEditor.document.uri
+				: null;
 
-	const previewCommand = commands.registerTextEditorCommand('extension.previewHandlebars', async () => {
-		const editor = window.activeTextEditor;
-
-		if (!editor) {
-			return;
-		}
-
-		const existingPanel = panels.find(x => x.editorFilePath() === editor.document.uri.fsPath);
-		
-		if (existingPanel) {
-			existingPanel.disposePreviewPanel();
-			panels.splice(panels.indexOf(existingPanel), 1);
-		}
-
-		const workspaceRoot = workspace.getWorkspaceFolder(editor.document.uri);
-
-		if (!workspaceRoot) {
-			return;
-		}
-
-		if (!partialsRegistered(workspaceRoot.uri.fsPath)) {
-			await findAndRegisterPartials(workspaceRoot);
-		}
-
-		try {
-			const panel = new PreviewPanelScope(editor);
-			await panel.update();
-			panels.push(panel);
-		} catch (error) { 
-			
+		if (templateUri) {
+			await openPreviewPanelByUri(templateUri);
 		}
 	});
 
-	context.subscriptions.push(previewCommand,...watchForPartials(panels), generateContextFromEditorCommand, generateContextFromExplorerCommand);
+	context.subscriptions.push(previewCommand, ...watchForPartials(panels), generateContextFromExplorerCommand);
+}
+
+async function openPreviewPanelByUri(uri: Uri) {
+	const existingPanel = panels.find(x => x.editorFilePath() === uri.fsPath);
+
+	if (existingPanel) {
+		// Remove existing panel and open new one
+		existingPanel.disposePreviewPanel();
+		panels.splice(panels.indexOf(existingPanel), 1);
+	}
+
+	const doc = workspace.textDocuments.find(x => x.fileName === uri.fsPath)
+		|| await workspace.openTextDocument(uri);
+
+	await openPreviewPanelByDocument(doc);
+}
+
+async function openPreviewPanelByDocument(doc: TextDocument) {
+	const existingPanel = panels.find(x => x.editorFilePath() === doc.fileName);
+
+	if (existingPanel) {
+		// Remove existing panel and open new one
+		existingPanel.disposePreviewPanel();
+		panels.splice(panels.indexOf(existingPanel), 1);
+	}
+
+	const workspaceRoot = workspace.getWorkspaceFolder(doc.uri);
+
+	if (!workspaceRoot) {
+		return;
+	}
+
+	if (!partialsRegistered(workspaceRoot.uri.fsPath)) {
+		await findAndRegisterPartials(workspaceRoot);
+	}
+
+	try {
+		const panel = new PreviewPanelScope(doc);
+		await panel.update();
+		panels.push(panel);
+	} catch (error) {
+		throw error;
+	}
 }
 
 function hookupErrorMessages() {
