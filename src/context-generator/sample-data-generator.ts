@@ -30,12 +30,12 @@ function tryNumeric(fieldName: string): boolean {
 
 function tryBoolean(fieldName: string): boolean {
 	if (!fieldName.toLowerCase().startsWith('is') && !fieldName.toLowerCase().startsWith('has')) {
-		return false
+		return false;
 	}
 
 	const nextChar = fieldName.replace(/(is|has)/, '')[0];
 
-	if (nextChar && nextChar == nextChar.toUpperCase()) {
+	if (nextChar && nextChar === nextChar.toUpperCase()) {
 		return true;
 	}
 
