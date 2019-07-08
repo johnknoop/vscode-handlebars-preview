@@ -14,7 +14,18 @@ export function activate(context: ExtensionContext) {
 
 	workspace.onDidChangeTextDocument(async e => {
 		for (const panel of panels) {
-			await panel.workspaceDocumentChanged(e)
+			await panel.workspaceDocumentChanged(e);
+		}
+	});
+
+	workspace.onDidCloseTextDocument(doc => {
+		for (let i = panels.length - 1; i >= 0; i--) {
+			const panel = panels[i];
+
+			if (panel.editorFilePath() === doc.fileName) {
+				panel.disposePreviewPanel();
+				panels.splice(i, 1);
+			}
 		}
 	});
 

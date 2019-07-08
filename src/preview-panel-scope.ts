@@ -25,8 +25,6 @@ export class PreviewPanelScope {
 
         this.contextWatcher = workspace.createFileSystemWatcher(contextFileName);
         this.contextWatcher.onDidChange(e => {
-            this.closePanelIfTemplateDocumentClosed();
-
             getCompiledHtml(this.editor, this.contextFileName).then(html => {
                 if (html) {
                     this.panel.webview.html = html;
@@ -35,11 +33,11 @@ export class PreviewPanelScope {
         });
     }
 
-    public editorFilePath() {
+    editorFilePath() {
         return this.editor.document.uri.fsPath;
     }
 
-    public async update() {
+    async update() {
         const html = await getCompiledHtml(this.editor, this.contextFileName);
 
         if (html) {
@@ -53,14 +51,7 @@ export class PreviewPanelScope {
 
     async workspaceDocumentChanged(event: TextDocumentChangeEvent) {
         if (event.document === this.editor.document || event.document.fileName === this.contextFileName) {
-            this.closePanelIfTemplateDocumentClosed();
             await this.update();
-        }
-    }
-
-    private closePanelIfTemplateDocumentClosed() {
-        if (this.editor.document.isClosed) {
-            this.disposePreviewPanel();
         }
     }
 }
