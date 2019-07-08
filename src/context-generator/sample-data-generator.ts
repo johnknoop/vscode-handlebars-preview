@@ -21,7 +21,7 @@ export default function (fieldName: string): number | boolean | string {
 
 const numericTells = [
 	'(?<!mess)age', 'number', 'length', 'height', 'width', 'size',
-	'index', 'order', 'ordinal'
+	'index', 'order', 'ordinal', 'quantity', 'id'
 ];
 
 function tryNumeric(fieldName: string): boolean {
