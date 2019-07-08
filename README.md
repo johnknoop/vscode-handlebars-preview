@@ -25,14 +25,25 @@ Changes to Handlebars templates applied in real-time. Included partials need to 
 ## Generate context file from template
 Right-click on a handlebars file in the sidebar or on the editor tab and select **Handlebars: Generate context file**.
 
-A new file named _{yourfile}_.json will be created and populated with sample data.
+A new file named `{yourfile}.json` will be created and populated with sample data.
 
-#### Current limitations of context generation:
-🙁 [Block parameters](https://handlebarsjs.com/block_helpers.html#block-params) in `each`-constructs are not supported\
-🙁 Path segments (`../`) are currently not supported.
+> #### Current limitations of context generation:
+> 🙁 [Block parameters](https://handlebarsjs.com/block_helpers.html#block-params) in `each`-constructs are not supported\
+> 🙁 Path segments (`../`) are currently not supported.
+> 
+> If you're using any of these features in your template, the resulting json will need some manual fixing.
+> 
+> Feel free to make a pull request if these limitations are bothering you.
 
-If you're using any of these features in your template, the resulting json will need some manual fixing.
+# Report an issue
 
-# Roadmap
+Found a problem or have a feature request? Please post an issue over at our GitHub repository:\
+https://github.com/johnknoop/vscode-handlebars-preview/issues
 
-📍 Override naming of partials using workspace-configuration
+# 2.0 roadmap
+
+
+📍 Override naming of partials using workspace-configuration\
+📍 Intellisense suggestions for partials and context data
+
+See https://github.com/johnknoop/vscode-handlebars-preview/milestone/1 for more details
