@@ -16,37 +16,3 @@ export default async function (templateFilename: string) {
         viewColumn: ViewColumn.Active
     });
 }
-
-// #region For testing purposes only 😲
-let hbs = `{{#>Partials/layout}}
-
-{{> header}}
-
-{{title}}
-{{author.name}}
-{{isConfirmed}}
-
-{{#each reviewers}}          
-	{{firstName}}
-	{{lastName}}
-	{{email}}
-	{{age}}
-
-	{{# each deepArray}}		
-		  {{ banana }}
-	{{/ each}}
-
-	{{ orange }}
-{{ /each }}
-
-{{signature}}
-
-{{#each otherthings as  |value key| }}		
-	{{firstName}}
-{{/each}}
-
-
-{{/Partials/layout}}`;
-
-console.log(generateContextObject(hbs));
-// #endregion

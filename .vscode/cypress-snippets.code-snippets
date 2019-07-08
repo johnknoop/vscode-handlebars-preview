@@ -1,0 +1,12 @@
+{
+	"jest-test": {
+		"prefix": "test",
+		"scope": "javascript,typescript",
+		"description": "Add a new Jest test",
+		"body": [
+			"test('$1', () => {",
+			"\t$2",
+			"});"
+		]
+	}
+}
