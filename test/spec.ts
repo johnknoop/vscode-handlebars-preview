@@ -1,4 +1,4 @@
-import generateContextObject from "../src/context-generator/array-scope-parser";
+import { extractArrayScopes } from "../src/context-generator/array-scope-parser";
 
 test('Array scope parser deals with arrays in nested objects', () => {
 	let hbs = `{{#>Partials/layout}}
@@ -31,7 +31,10 @@ test('Array scope parser deals with arrays in nested objects', () => {
 	
 	{{/Partials/layout}}`;
 
-	const result = generateContextObject(hbs);
+	const result = extractArrayScopes(hbs);
 
-	console.log(result);
+	expect(result).toHaveProperty('someObject.reviewers');
+	expect(Array.isArray(result['someObject']['reviewers'])).toBe(true);
+
+	console.log(JSON.stringify(result, null, 2));
 })

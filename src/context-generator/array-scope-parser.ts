@@ -1,25 +1,28 @@
 import { extractJson } from "./extract-json";
 
+type ScopeType = 'root' | 'subscope';
+
 interface Scope {
-	type: 'root' | 'subscope'
+	identifier?: string;
+	type: ScopeType
 	childScopes: ArrayScope[];
 }
 
-class ArrayScope implements Scope {
+export class ArrayScope implements Scope {
 	protected body = '';
 	childScopes: ArrayScope[] = [];
 
 	constructor(hbs: string, type: 'root');
 	constructor(hbs: string, type: 'subscope', identifier: string);
 
-	constructor(private hbs: string, readonly type: 'root' | 'subscope', readonly identifier?: string) {
+	constructor(private hbs: string, readonly type: ScopeType, readonly identifier?: string) {
 		this.scanScope();
 	}
 
 	private scanScope() {
 		let nextStop: RegExpExecArray | null;
 
-		while ((nextStop = /{{\s*(#|\/)\s*each\s*(\w+)?.*}}/.exec(this.hbs)) !== null) {
+		while ((nextStop = /{{\s*(#|\/)\s*each\s*([\w.]+)?.*}}/.exec(this.hbs)) !== null) {
 			const [, controlChar, arrayName] = nextStop;
 
 			if (controlChar === '#') {
@@ -46,21 +49,30 @@ class ArrayScope implements Scope {
 	}
 }
 
-class RootScope extends ArrayScope implements Scope {
-	type: 'root' | 'subscope' = 'root';
+export class RootScope extends ArrayScope implements Scope {
+	type = 'root' as ScopeType;
 
 	constructor(hbs) {
 		super(hbs, 'root');
 	}
 
 	private getChildExpressions(scope: Scope) {
-		const childArrays = {};
+		let childArrays = {};
 
 		for (const childScope of scope.childScopes) {
-			childArrays[childScope.identifier!] = [{
-				...childScope.getExpressions(),
-				...this.getChildExpressions(childScope)
-			}]
+			const tokens = childScope.identifier!.split('.');
+
+			tokens.forEach((prop, i) => {
+				if (i < tokens.length - 1) {
+					childArrays[prop] = {};
+					childArrays = childArrays[prop];
+				} else {
+					childArrays[prop] = [{
+						...childScope.getExpressions(),
+						...this.getChildExpressions(childScope)
+					}];
+				}
+			})
 		}
 
 		return childArrays;
@@ -76,8 +88,7 @@ class RootScope extends ArrayScope implements Scope {
 	}
 }
 
-export default function(template: string): string {
+export function extractArrayScopes(template: string): Object {
 	const root = new RootScope(template);
-
-	return JSON.stringify(root.getExpressions(), null, 2);
+	return root.getExpressions();
 }
