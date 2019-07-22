@@ -4,7 +4,7 @@ type ScopeType = 'root' | 'subscope';
 
 interface Scope {
 	identifier?: string;
-	type: ScopeType
+	type: ScopeType;
 	childScopes: ArrayScope[];
 }
 
@@ -57,17 +57,18 @@ export class RootScope extends ArrayScope implements Scope {
 	}
 
 	private getChildExpressions(scope: Scope) {
-		let childArrays = {};
+		const childArrays = {};
 
 		for (const childScope of scope.childScopes) {
 			const tokens = childScope.identifier!.split('.');
+			let currentScopeToPopulate = childArrays;
 
 			tokens.forEach((prop, i) => {
 				if (i < tokens.length - 1) {
-					childArrays[prop] = {};
-					childArrays = childArrays[prop];
+					currentScopeToPopulate[prop] = {};
+					currentScopeToPopulate = currentScopeToPopulate[prop];
 				} else {
-					childArrays[prop] = [{
+					currentScopeToPopulate[prop] = [{
 						...childScope.getExpressions(),
 						...this.getChildExpressions(childScope)
 					}];
