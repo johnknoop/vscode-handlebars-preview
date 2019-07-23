@@ -108,7 +108,12 @@ function repathImages(html: string, templateDocument: TextDocument) {
     const $ = loadDocument(html);
 
     $('img')
-        .filter((i, elm) => !elm.attribs['src'].toLowerCase().startsWith('http'))
+        .filter((i, elm) => 
+            // Skip data-urls
+            elm.attribs['src'].trimLeft().slice(0, 5).toLowerCase() !== 'data:' &&
+            // Skip remote images
+            !elm.attribs['src'].toLowerCase().startsWith('http')
+        )
         .each((index, element) => {
             const newSrc = templateDocument.uri.with({
                 scheme: 'vscode-resource',
