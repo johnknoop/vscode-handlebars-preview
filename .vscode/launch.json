@@ -20,7 +20,7 @@
 		{
 			"type": "node",
 			"request": "launch",
-			"name": "Jest Test",
+			"name": "Jest active file",
 			"program": "${workspaceFolder}\\node_modules\\jest\\bin\\jest",
 			"args": [
 				"--runInBand",

@@ -2,11 +2,6 @@
 	"name": "handlebars-preview",
 	"displayName": "Handlebars Preview",
 	"description": "Preview Handlebars files in VS Code with custom data",
-	"author": {
-		"name": "John Knoop, Greenbyte",
-		"email": "john@greenbyte.com",
-		"url": "https://www.greenbyte.com"
-	},
 	"publisher": "Greenbyte",
 	"version": "1.0.0-beta.2",
 	"engines": {
