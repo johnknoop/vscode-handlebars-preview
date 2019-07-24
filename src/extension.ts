@@ -6,8 +6,15 @@ import { debounceTime, filter, take, repeat } from "rxjs/operators";
 import { partialsRegistered, findAndRegisterPartials, watchForPartials } from './partials';
 
 const panels: PreviewPanelScope[] = [];
-export const showErrorMessage = new Subject<string | null>();
+export const showErrorMessage = new Subject<{ message: string; panel: PreviewPanelScope; } | null>();
 
+function onPreviewPanelClosed(panel: PreviewPanelScope) {
+	for (let i = panels.length - 1; i >= 0; i--) {
+		if (panels[i] === panel) {
+			panels.splice(i, 1);
+		}
+	}
+}
 
 export function activate(context: ExtensionContext) {
 	hookupErrorMessages();
@@ -93,7 +100,7 @@ async function openPreviewPanelByDocument(doc: TextDocument) {
 	}
 
 	try {
-		const panel = new PreviewPanelScope(doc);
+		const panel = new PreviewPanelScope(doc, onPreviewPanelClosed);
 		await panel.update();
 		panels.push(panel);
 	} catch (error) {
@@ -102,13 +109,14 @@ async function openPreviewPanelByDocument(doc: TextDocument) {
 }
 
 function hookupErrorMessages() {
-	const errorMessages = showErrorMessage.pipe(filter(x => typeof x === 'string'), debounceTime(1000));
+	const errorMessages = showErrorMessage.pipe(filter(x => x !== null), debounceTime(1000));
 	const resets = showErrorMessage.pipe(filter(x => x === null));
+
 	race(errorMessages, resets)
 		.pipe(take(1)).pipe(repeat())
 		.subscribe(msg => {
-			if (typeof msg === 'string') {
-				window.showErrorMessage(msg);
+			if (msg !== null) {
+				msg.panel.showErrorPage(msg.message);
 			}
 		});
 }
