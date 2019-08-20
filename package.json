@@ -3,7 +3,7 @@
 	"displayName": "Handlebars Preview",
 	"description": "Preview Handlebars files in VS Code with custom data",
 	"publisher": "Greenbyte",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"engines": {
 		"vscode": "^1.35.1"
 	},
@@ -20,7 +20,7 @@
 		"onCommand:extension.generateContextFile"
 	],
 	"main": "./out/extension.js",
-	"preview": true,
+	"preview": false,
 	"contributes": {
 		"commands": [
 			{
