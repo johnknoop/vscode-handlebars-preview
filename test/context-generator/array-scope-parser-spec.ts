@@ -53,7 +53,7 @@ type CorrectResult = {
 };
 
 test('should extract properties of each scope', () => {
-	const scope = new RootScope(`{{#each someObject.reviewers}}          
+	const scope = new RootScope(`{{rootProp1}}{{#each someObject.reviewers}}          
 			{{firstName}}
 			{{lastName}}
 			{{email}}
@@ -64,12 +64,15 @@ test('should extract properties of each scope', () => {
 			{{/ each}}
 
 			{{ orange }}
-		{{ /each }}
+		{{ /each }}{{rootProp2}}
 		`);
 
 	const result = scope.getExpressions() as CorrectResult;
 
-	expect(Object.keys(result).length).toBe(1);
+	expect(result).toHaveProperty('rootProp1');
+	expect(result).toHaveProperty('rootProp2');
+
+	expect(Object.keys(result).length).toBe(3);
 	expect(result).toHaveProperty('someObject');
 
 	expect(Object.keys(result.someObject).length).toBe(1);

@@ -1,8 +1,3 @@
-type DataTypeResult = {
-	success: boolean;
-
-}
-
 /**
  * Generates sample data based on descriptor.
  * @param fieldName A (trimmed) descriptor of the data

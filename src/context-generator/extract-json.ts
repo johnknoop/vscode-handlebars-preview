@@ -1,4 +1,4 @@
-import generateSampleValue from "./sample-data-generator";
+import generateSampleValue from './sample-data-generator';
 
 export function extractJson(hbs: string): Object {
     const result = {};
