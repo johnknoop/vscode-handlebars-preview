@@ -43,11 +43,12 @@ export function activate(context: ExtensionContext) {
 				? window.activeTextEditor.document.uri
 				: null;
 
-		if (templateUri) {
-			await openPreviewPanelByUri(templateUri);
+		if (!templateUri) {
+			window.showInformationMessage('Please save the template in order to generate context file');
+			return;
 		}
 
-		await generateContext(uri.fsPath);
+		await generateContext(templateUri!.fsPath);
 	});
 
 	const previewCommand = commands.registerCommand('extension.previewHandlebars', async (uri: Uri) => {
