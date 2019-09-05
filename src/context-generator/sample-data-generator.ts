@@ -43,6 +43,7 @@ const cityTells = ['city', 'town'];
 const countryTells = ['country', 'land'];
 const colorTells = ['color', 'colour'];
 const emailTells = ['email', 'e_mail', 'mail', 'mailaddress', 'mail_address'];
+const urlTells = ['url'];
 
 const countries = ['Sweden', 'Japan', 'Italy', 'Brazil'];
 const cities = ['Chicago', 'Gothenburg', 'Kairo', 'Sidney'];
@@ -79,6 +80,10 @@ function getStringSample(fieldName: string): string {
 		const name = firstNames[Math.floor(Math.random() * firstNames.length)].toLowerCase().replace(/\W/g, '-');
 
 		return `${name}@${domain}`;
+	}
+
+	if (urlTells.some(x => normalizedFieldName.includes(x))) {
+		return 'https://www.example.com';
 	}
 
 	return '';
