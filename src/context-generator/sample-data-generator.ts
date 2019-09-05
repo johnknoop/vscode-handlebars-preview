@@ -16,7 +16,7 @@ export default function (fieldName: string): number | boolean | string {
 
 const numericTells = [
 	'(?<!mess)age', 'number', 'length', 'height', 'width', 'size',
-	'index', 'order', 'ordinal', 'quantity', 'id'
+	'index', 'order', 'ordinal', 'quantity', 'id', 'sum'
 ];
 
 function tryNumeric(fieldName: string): boolean {
@@ -38,12 +38,11 @@ function tryBoolean(fieldName: string): boolean {
 }
 
 const lastNameTells = ['lastname', 'surname', 'familyname', 'last_name'];
-const firstNameTells = ['firstname', 'first_name', 'name', 'author']
+const firstNameTells = ['firstname', 'first_name', 'name', 'author'];
 const cityTells = ['city', 'town'];
 const countryTells = ['country', 'land'];
 const colorTells = ['color', 'colour'];
-const emailTells = ['email', 'e_mail', 'mail', 'emailaddress', 'mailaddress',
-						'mail_address', 'email_address'];
+const emailTells = ['email', 'e_mail', 'mail', 'mailaddress', 'mail_address'];
 
 const countries = ['Sweden', 'Japan', 'Italy', 'Brazil'];
 const cities = ['Chicago', 'Gothenburg', 'Kairo', 'Sidney'];
