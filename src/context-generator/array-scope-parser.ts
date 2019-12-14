@@ -1,4 +1,4 @@
-import { extractJson } from "./extract-json";
+import { extractJson } from './extract-json';
 import { Exception } from 'handlebars';
 
 type ScopeType = 'root' | 'subscope';
