@@ -135,7 +135,9 @@ function repathImages(html: string, templateDocument: TextDocument) {
             element.attribs['src'] = newSrc;
         });
 
-    return $.html({
-        decodeEntities: false
+    const repathedHtml = $.html({
+        decodeEntities: true
     });
+
+    return repathedHtml;
 }
