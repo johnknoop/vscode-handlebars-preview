@@ -28,7 +28,7 @@ Right-click on a handlebars file in the sidebar or on the editor tab and select 
 A new file named `{yourfile}.json` will be created and populated with sample data.
 
 > #### Current limitations of context generation:
-> 🙁 [Block parameters](https://handlebarsjs.com/block_helpers.html#block-params) in `each`-constructs are not supported\
+> 🙁 [Block parameters](https://handlebarsjs.com/guide/block-helpers.html#block-parameters) in `each`-constructs are not supported\
 > 🙁 Path segments (`../`) are currently not supported.
 > 
 > If you're using any of these features in your template, the resulting json will need some manual fixing.
