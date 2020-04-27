@@ -1,4 +1,4 @@
-import { WebviewPanel, TextEditor, TextDocumentChangeEvent, ViewColumn, Uri, workspace, window, FileSystemWatcher, ExtensionContext, TextDocument } from 'vscode';
+import { WebviewPanel, TextDocumentChangeEvent, ViewColumn, Uri, workspace, window, TextDocument } from 'vscode';
 import { promises, existsSync } from 'fs';
 import { load as loadDocument } from "cheerio";
 import * as path from "path";
@@ -6,7 +6,6 @@ import { compile, TemplateDelegate } from 'handlebars';
 import { showErrorMessage } from "./extension";
 
 export class PreviewPanelScope {
-    private readonly contextWatcher: FileSystemWatcher;
     private readonly panel: WebviewPanel;
     private readonly contextFileName: string;
 
@@ -20,17 +19,7 @@ export class PreviewPanelScope {
         });
 
         this.panel.onDidDispose(() => {
-            this.contextWatcher.dispose();
             onPreviewPanelClosed(this);
-        });
-
-        this.contextWatcher = workspace.createFileSystemWatcher(contextFileName);
-        this.contextWatcher.onDidChange(e => {
-            getCompiledHtml(this.document, this.contextFileName, this).then(html => {
-                if (html) {
-                    this.panel.webview.html = html;
-                }
-            });
         });
     }
 
@@ -60,6 +49,12 @@ export class PreviewPanelScope {
 
     async workspaceDocumentChanged(event: TextDocumentChangeEvent) {
         if (event.document === this.document || event.document.fileName === this.contextFileName) {
+            await this.update();
+        }
+    }
+
+    async workspaceDocumentSaved(document: TextDocument) {
+        if (document.fileName.toLowerCase().endsWith(".css")) {
             await this.update();
         }
     }
@@ -100,7 +95,7 @@ async function getCompiledHtml(templateDocument: TextDocument, contextFile: stri
             return false;
         }
 
-        return repathImages(rendered || '', templateDocument);
+        return repathLocalFiles(rendered || '', templateDocument);
 
     } catch (err) {
         showErrorMessage.next({ panel: panel, message: `Error rendering handlebars template: ${JSON.stringify(err)}` });
@@ -117,9 +112,10 @@ async function getContextData(contextFile: string) {
     }
 }
 
-function repathImages(html: string, templateDocument: TextDocument) {
+function repathLocalFiles(html: string, templateDocument: TextDocument) {
     const $ = loadDocument(html);
 
+    // Images
     $('img')
         .filter((i, elm) => 
             // Skip data-urls
@@ -127,12 +123,31 @@ function repathImages(html: string, templateDocument: TextDocument) {
             // Skip remote images
             !elm.attribs['src'].toLowerCase().startsWith('http')
         )
-        .each((index, element) => {
+        .each((i, elm) => {
             const newSrc = templateDocument.uri.with({
                 scheme: 'vscode-resource',
-                path: path.join(path.dirname(templateDocument.fileName), element.attribs['src']),
+                path: path.join(path.dirname(templateDocument.fileName), elm.attribs['src']),
             }).toString();
-            element.attribs['src'] = newSrc;
+            elm.attribs['src'] = newSrc;
+        });
+    
+    // CSS
+    $('link')
+        .filter((i, elm) => 
+            // Skip data-urls
+            elm.attribs['href'].trimLeft().slice(0, 5).toLowerCase() !== 'data:' &&
+            // Skip remote css
+            !elm.attribs['href'].toLowerCase().startsWith('http') &&
+            // Ensure only .css files
+            elm.attribs['href'].toLowerCase().endsWith('.css')
+        )
+        .each((i, elm) => {
+            const newHref = templateDocument.uri.with({
+                scheme: 'vscode-resource',
+                path: path.join(path.dirname(templateDocument.fileName), elm.attribs['href']),
+            }).toString();
+            const cacheClear = new Date().getTime();
+            elm.attribs['href'] = `${newHref}?${cacheClear}`;
         });
 
     const repathedHtml = $.html({

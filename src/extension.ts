@@ -1,4 +1,4 @@
-import { commands, window, ExtensionContext, workspace, WorkspaceFolder, RelativePattern, Uri, TextDocument } from 'vscode';
+import { commands, window, ExtensionContext, workspace, Uri, TextDocument } from 'vscode';
 import { PreviewPanelScope } from './preview-panel-scope';
 import generateContext from "./context-generator/context-generator";
 import { Subject, race } from "rxjs";
@@ -22,6 +22,12 @@ export function activate(context: ExtensionContext) {
 	workspace.onDidChangeTextDocument(async e => {
 		for (const panel of panels) {
 			await panel.workspaceDocumentChanged(e);
+		}
+	});
+
+	workspace.onDidSaveTextDocument(async doc => {
+		for (const panel of panels) {
+			await panel.workspaceDocumentSaved(doc);
 		}
 	});
 
