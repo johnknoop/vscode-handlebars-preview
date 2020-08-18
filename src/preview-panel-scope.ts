@@ -138,11 +138,12 @@ function repathLocalFiles(html: string, templateDocument: TextDocument) {
             elm.attribs['href'].toLowerCase().endsWith('.css')
         )
         .each((i, elm) => {
-            const newHref = templateDocument.uri.with({
-                scheme: 'vscode-resource',
-                path: path.join(path.dirname(templateDocument.fileName), elm.attribs['href']),
-            }).toString();
             const cacheClear = new Date().getTime();
+
+            const newHref = elm.attribs['src'] = Uri
+                .file(path.join(path.dirname(templateDocument.fileName), elm.attribs['href']))
+                .with({ scheme: 'vscode-resource' }).toString();
+
             elm.attribs['href'] = `${newHref}?${cacheClear}`;
         });
 
