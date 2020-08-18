@@ -3,7 +3,7 @@
 	"displayName": "Handlebars Preview",
 	"description": "Preview Handlebars files in VS Code with custom data",
 	"publisher": "Greenbyte",
-	"version": "1.0.2",
+	"version": "1.1.1",
 	"engines": {
 		"vscode": "^1.35.1"
 	},

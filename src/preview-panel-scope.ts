@@ -124,11 +124,7 @@ function repathLocalFiles(html: string, templateDocument: TextDocument) {
             !elm.attribs['src'].toLowerCase().startsWith('http')
         )
         .each((i, elm) => {
-            const newSrc = templateDocument.uri.with({
-                scheme: 'vscode-resource',
-                path: path.join(path.dirname(templateDocument.fileName), elm.attribs['src']),
-            }).toString();
-            elm.attribs['src'] = newSrc;
+            elm.attribs['src'] = Uri.file(path.join(path.dirname(templateDocument.fileName), elm.attribs['src'])).with({ scheme: 'vscode-resource' }).toString();
         });
     
     // CSS
