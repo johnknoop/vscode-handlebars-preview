@@ -4,6 +4,7 @@ import generateContext from "./context-generator/context-generator";
 import { Subject, race } from "rxjs";
 import { debounceTime, filter, take, repeat } from "rxjs/operators";
 import { partialsRegistered, findAndRegisterPartials, watchForPartials } from './partials';
+import { helpersRegistered, findAndRegisterHelpers, watchForHelpers } from './helpers';
 
 const panels: PreviewPanelScope[] = [];
 export const showErrorMessage = new Subject<{ message: string; panel: PreviewPanelScope; } | null>();
@@ -70,6 +71,7 @@ export function activate(context: ExtensionContext) {
 	});
 
 	context.subscriptions.push(previewCommand, ...watchForPartials(panels), generateContextFromExplorerCommand);
+	context.subscriptions.push(previewCommand, ...watchForHelpers(panels), generateContextFromExplorerCommand);
 }
 
 async function openPreviewPanelByUri(uri: Uri) {
@@ -104,6 +106,10 @@ async function openPreviewPanelByDocument(doc: TextDocument) {
 
 	if (!partialsRegistered(workspaceRoot.uri.fsPath)) {
 		await findAndRegisterPartials(workspaceRoot);
+	}
+
+	if (!helpersRegistered(workspaceRoot.uri.fsPath)) {
+		await findAndRegisterHelpers(workspaceRoot);
 	}
 
 	try {

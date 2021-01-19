@@ -19,6 +19,28 @@ Partials are automatically discovered and given names based off of the workspace
 ```
 Then the two partials will be registered as `partials/footer` and `partials/style/dark` respectively.
 
+## Helpers
+Helpers can be defined as javascript modules and will be automatically discovered and registered. Helpers can be placed anywhere in the Workspace, as long as they use the double file extentions like: `.hbs.js` or `.handlebars.js`.
+   
+As an example, a typical helper file could look like this:
+```js
+// my_helpers.handlebars.js
+
+module.exports = {
+    toUpperCase: function (text) {
+        return text.toUpperCase();
+    },
+    toLowerCase: function (text) {
+        return text.toLowerCase();
+    }
+};
+```
+And could be used like this inside your Handlebars template to properly cast the `title` variable to upperCase:
+
+```hbs
+{{toUpperCase title}}
+```
+
 ## Auto-refresh
 Changes to Handlebars templates applied in real-time. Included partials need to be saved in order for the change to take effect.
 
