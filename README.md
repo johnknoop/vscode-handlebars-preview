@@ -4,7 +4,7 @@ Open a Handlebars file, select **Handlebars: Preview** from the command menu **o
 # Features
 
 ✅ Image support\
-✅ [Automatically scans your workspace folder(s) for partials](#partials)\
+✅ [Automatically scans your workspace folder(s) for partials and helpers](#partials)\
 ✅ [Auto-refresh](#auto-refresh)\
 ✅ [Generate context file from a template](#generate-context-file-from-template)
 
