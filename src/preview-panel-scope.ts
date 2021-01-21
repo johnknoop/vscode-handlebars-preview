@@ -117,19 +117,26 @@ function repathLocalFiles(html: string, templateDocument: TextDocument) {
 
     // Images
     $('img')
-        .filter((i, elm) => 
+        .filter((i, elm) =>
+            // satisfy typing
+            elm.type === 'tag' &&
             // Skip data-urls
             elm.attribs['src'].trimLeft().slice(0, 5).toLowerCase() !== 'data:' &&
             // Skip remote images
             !elm.attribs['src'].toLowerCase().startsWith('http')
         )
         .each((i, elm) => {
-            elm.attribs['src'] = Uri.file(path.join(path.dirname(templateDocument.fileName), elm.attribs['src'])).with({ scheme: 'vscode-resource' }).toString();
+            // satisfy typing
+            if (elm.type === 'tag') {
+                elm.attribs['src'] = Uri.file(path.join(path.dirname(templateDocument.fileName), elm.attribs['src'])).with({ scheme: 'vscode-resource' }).toString();
+            }
         });
     
     // CSS
     $('link')
         .filter((i, elm) => 
+            // satisfy typing
+            elm.type === 'tag' &&
             // Skip data-urls
             elm.attribs['href'].trimLeft().slice(0, 5).toLowerCase() !== 'data:' &&
             // Skip remote css
@@ -138,13 +145,17 @@ function repathLocalFiles(html: string, templateDocument: TextDocument) {
             elm.attribs['href'].toLowerCase().endsWith('.css')
         )
         .each((i, elm) => {
-            const cacheClear = new Date().getTime();
+            // satisfy typing
+            if (elm.type === 'tag') {
 
-            const newHref = elm.attribs['src'] = Uri
-                .file(path.join(path.dirname(templateDocument.fileName), elm.attribs['href']))
-                .with({ scheme: 'vscode-resource' }).toString();
+                const cacheClear = new Date().getTime();
 
-            elm.attribs['href'] = `${newHref}?${cacheClear}`;
+                const newHref = elm.attribs['src'] = Uri
+                    .file(path.join(path.dirname(templateDocument.fileName), elm.attribs['href']))
+                    .with({ scheme: 'vscode-resource' }).toString();
+
+                elm.attribs['href'] = `${newHref}?${cacheClear}`;
+            }
         });
 
     const repathedHtml = $.html({
