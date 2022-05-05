@@ -1,4 +1,4 @@
-import partialNameGenerator from './partial-name-generator';
+import { generatePartialName, generatePartialNames } from './partial-name-generator';
 import { promises } from 'fs';
 import { registerPartial } from 'handlebars';
 import { workspace, WorkspaceFolder, RelativePattern } from 'vscode';
@@ -12,15 +12,25 @@ export function partialsRegistered(workspaceRoot: string) {
 
 export async function findAndRegisterPartials(workspaceFolder: WorkspaceFolder) {
 	const hbsFiles = await workspace.findFiles(new RelativePattern(workspaceFolder, '**/*.{hbs,handlebars}'));
-	const knownPartials = {};
-
-	for (const hbs of hbsFiles) {
-		const workspaceFolder = workspace.getWorkspaceFolder(hbs);
-		if (workspaceFolder) {
-			knownPartials[partialNameGenerator(hbs.fsPath, workspaceFolder.uri.fsPath)] =
-				await promises.readFile(hbs.fsPath, 'utf8');
-		}
-	}
+	
+	const foundTemplates = hbsFiles
+		.map(x => ({
+			filePath: x.fsPath,
+			workspaceRoot: workspace.getWorkspaceFolder(x),
+		}))
+		.filter(x => x.workspaceRoot)
+		.map(x => ({
+			filePath: x.filePath,
+			workspaceRoot: x.workspaceRoot!.uri.fsPath,
+		}));
+	
+	const knownPartials = await generatePartialNames(foundTemplates)
+		.reduce(async (map, t) => {
+			return {
+				...await map,
+				[t.registeredName]: await promises.readFile(t.filePath, 'utf8')
+			};
+		}, Promise.resolve({}));
 	
 	registerPartial(knownPartials);
 
@@ -37,9 +47,10 @@ export function* watchForPartials(panels: PreviewPanelScope[]) {
 			return;
 		}
 
+		const partialName = generatePartialName(e.fsPath, workspaceFolder.uri.fsPath);
+
 		const partial = {
-			[partialNameGenerator(
-				e.fsPath, workspaceFolder.uri.fsPath)]: await promises.readFile(e.fsPath, 'utf8')
+			[partialName.registeredName]: await promises.readFile(e.fsPath, 'utf8')
 		} as any;
 
 		registerPartial(partial);
@@ -56,8 +67,9 @@ export function* watchForPartials(panels: PreviewPanelScope[]) {
 			return;
 		}
 
-		registerPartial(partialNameGenerator(
-			e.fsPath, workspaceFolder.uri.fsPath),
+		const partialName = generatePartialName(e.fsPath, workspaceFolder.uri.fsPath);
+
+		registerPartial(partialName.registeredName,
 			await promises.readFile(e.fsPath, 'utf8')
 		);
 
