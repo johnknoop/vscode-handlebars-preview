@@ -15,7 +15,8 @@ export class PreviewPanelScope {
         this.contextFileName = contextFileName;
 
         this.panel = window.createWebviewPanel("preview", `Preview: ${path.basename(document.fileName)}`, ViewColumn.Two, {
-            localResourceRoots: workspace.workspaceFolders!.map(p => p.uri).concat(Uri.file(path.dirname(document.fileName)))
+            localResourceRoots: workspace.workspaceFolders!.map(p => p.uri).concat(Uri.file(path.dirname(document.fileName))),
+            enableScripts: true,
         });
 
         this.panel.onDidDispose(() => {
