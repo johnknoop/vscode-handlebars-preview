@@ -1,6 +1,6 @@
-import { generatePartialName, generatePartialNames } from './partial-name-generator';
+import { abbreviatePartialName, generatePartialName, generatePartialNames, partialHasAbbreviatedAlias, partialNameCanBeAbbreviated } from './partial-name-generator';
 import { promises } from 'fs';
-import { registerPartial } from 'handlebars';
+import { registerPartial, partials, unregisterPartial } from 'handlebars';
 import { workspace, WorkspaceFolder, RelativePattern } from 'vscode';
 import { PreviewPanelScope } from './preview-panel-scope';
 
@@ -68,10 +68,19 @@ export function* watchForPartials(panels: PreviewPanelScope[]) {
 		}
 
 		const partialName = generatePartialName(e.fsPath, workspaceFolder.uri.fsPath);
+		const partialTemplateContent = await promises.readFile(e.fsPath, 'utf8');
 
 		registerPartial(partialName.registeredName,
-			await promises.readFile(e.fsPath, 'utf8')
+			partialTemplateContent
 		);
+
+		if (partialNameCanBeAbbreviated(partialName.registeredName) && partialHasAbbreviatedAlias(partialName.registeredName)) {
+			const abbreviatedName = abbreviatePartialName(partialName.registeredName);
+
+			registerPartial(abbreviatedName,
+				partialTemplateContent
+			);
+		}
 
 		for (const panel of panels) {
 			await panel.update();
