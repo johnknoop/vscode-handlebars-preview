@@ -1,10 +1,12 @@
+import * as vscode from 'vscode';
+import generateContext from "./context-generator/context-generator";
 import { commands, window, ExtensionContext, workspace, Uri, TextDocument } from 'vscode';
 import { PreviewPanelScope } from './preview-panel-scope';
-import generateContext from "./context-generator/context-generator";
 import { Subject, race } from "rxjs";
 import { debounceTime, filter, take, repeat } from "rxjs/operators";
 import { partialsRegistered, findAndRegisterPartials, watchForPartials } from './partials';
 import { helpersRegistered, findAndRegisterHelpers, watchForHelpers } from './helpers';
+import { HbsTreeItem, HbsContextTreeDataProvider } from './context-data-tree-provider';
 
 const panels: PreviewPanelScope[] = [];
 export const showErrorMessage = new Subject<{ message: string; panel: PreviewPanelScope; } | null>();
@@ -43,6 +45,23 @@ export function activate(context: ExtensionContext) {
 		}
 	});
 
+	const rootPath = vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
+		? vscode.workspace.workspaceFolders[0].uri.fsPath
+		: undefined;
+	const provider = new HbsContextTreeDataProvider(rootPath);
+	const onDidChangeActiveTextEditorHnd = vscode.window.onDidChangeActiveTextEditor(provider.onDidChangeActiveTextEditor.bind(provider));
+	vscode.window.registerTreeDataProvider('handlebarsContextChooser', provider);
+	const refreshTreeCommand = commands.registerCommand('extension.refreshTree', async (uri: Uri) => {
+		// vscode.debug.activeDebugConsole.appendLine(`executing command  ${uri}`);
+		provider && provider.refresh();
+	});
+	const useContextCommand = commands.registerCommand('extension.useContext', async (item: HbsTreeItem) => {
+		const templateUri = getActiveTemplateUri(undefined);
+		if (templateUri) {
+			await openPreviewPanelByUri(templateUri, item.location);
+		}
+	});
+
 	const generateContextFromExplorerCommand = commands.registerCommand('extension.generateContextFile', async (uri: Uri) => {
 		const templateUri = uri
 			? uri
@@ -59,14 +78,9 @@ export function activate(context: ExtensionContext) {
 	});
 
 	const previewCommand = commands.registerCommand('extension.previewHandlebars', async (uri: Uri) => {
-		const templateUri = uri
-			? uri
-			: window && window.activeTextEditor && window.activeTextEditor.document.languageId === 'handlebars'
-				? window.activeTextEditor.document.uri
-				: null;
-
+		const templateUri = getActiveTemplateUri(uri);
 		if (templateUri) {
-			await openPreviewPanelByUri(templateUri);
+			await openPreviewPanelByUri(templateUri, undefined);
 		}
 	});
 
@@ -74,7 +88,14 @@ export function activate(context: ExtensionContext) {
 	context.subscriptions.push(previewCommand, ...watchForHelpers(panels), generateContextFromExplorerCommand);
 }
 
-async function openPreviewPanelByUri(uri: Uri) {
+function getActiveTemplateUri(uri: Uri|undefined): Uri|null {
+	return uri ? uri
+		: window && window.activeTextEditor && window.activeTextEditor.document.languageId === 'handlebars'
+			? window.activeTextEditor.document.uri
+			: null;
+}
+
+async function openPreviewPanelByUri(uri: Uri, contextFileName: string|undefined) {
 	const existingPanel = panels.find(x => x.editorFilePath() === uri.fsPath);
 
 	if (existingPanel) {
@@ -86,10 +107,10 @@ async function openPreviewPanelByUri(uri: Uri) {
 	const doc = workspace.textDocuments.find(x => x.fileName === uri.fsPath)
 		|| await workspace.openTextDocument(uri);
 
-	await openPreviewPanelByDocument(doc);
+	await openPreviewPanelByDocument(doc, contextFileName);
 }
 
-async function openPreviewPanelByDocument(doc: TextDocument) {
+async function openPreviewPanelByDocument(doc: TextDocument, contextFileName: string|undefined) {
 	const existingPanel = panels.find(x => x.editorFilePath() === doc.fileName);
 
 	if (existingPanel) {
@@ -113,7 +134,7 @@ async function openPreviewPanelByDocument(doc: TextDocument) {
 	}
 
 	try {
-		const panel = new PreviewPanelScope(doc, onPreviewPanelClosed);
+		const panel = new PreviewPanelScope(doc, contextFileName, onPreviewPanelClosed);
 		await panel.update();
 		panels.push(panel);
 	} catch (error) {

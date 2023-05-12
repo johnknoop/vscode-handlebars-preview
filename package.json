@@ -30,6 +30,14 @@
 			{
 				"command": "extension.generateContextFile",
 				"title": "Handlebars: Generate context file"
+			},
+			{
+				"command": "extension.refreshTree",
+				"title": "Reload"
+			},
+			{
+				"command": "extension.useContext",
+				"title": "Use"
 			}
 		],
 		"menus": {
@@ -51,8 +59,31 @@
 					"when": "resourceLangId == handlebars",
 					"group": "Handlebars"
 				}
+			],
+			"view/title": [
+				{
+					"command": "extension.refreshTree",
+					"when": "view == handlebarsContextChooser",
+					"group": "navigation"
+				}
+			],
+			"view/item/context": [
+				{
+					"command": "extension.useContext",
+					"when": "view == handlebarsContextChooser && viewItem == file",
+					"group": "inline"
+				}
 			]
-		}
+		},
+		"views": {
+      "debug": [
+        {
+					"_documentation": "https://code.visualstudio.com/api/extension-guides/tree-view",
+          "id": "handlebarsContextChooser",
+          "name": "Handlebars Preview - Contexts"
+        }
+      ]
+    }
 	},
 	"scripts": {
 		"vscode:prepublish": "yarn run compile",
