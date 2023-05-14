@@ -4,7 +4,7 @@ import * as path from 'path';
 
 export class HbsContextTreeDataProvider implements vscode.TreeDataProvider<HbsTreeItem> {
 
-	private lastWorkingDir: string|undefined;
+	workingDir: string|undefined;
 	private treeChangedEvent: vscode.EventEmitter<HbsTreeItem | null | undefined> = new vscode.EventEmitter<HbsTreeItem | null | undefined>();
 
 	constructor(private workspaceRoot: string|undefined) {}
@@ -19,17 +19,9 @@ export class HbsContextTreeDataProvider implements vscode.TreeDataProvider<HbsTr
     this.treeChangedEvent.fire();
   }
 
-	onDidChangeActiveTextEditor(e: vscode.TextEditor | undefined) {
-		var workingDir = this.getCurrentEditorDir();
-		if (this.lastWorkingDir != workingDir) {
-			this.lastWorkingDir = workingDir;
-			this.refresh();
-		}
-	}
-
   getChildren(element?: HbsTreeItem): Thenable<HbsTreeItem[]> {
 		var list = new Array<HbsTreeItem>();
-		let curDir = element ? element.location : this.getCurrentEditorDir();
+		let curDir = element ? element.location : this.workingDir;
 		var wsRoot = this.workspaceRoot ? this.workspaceRoot : curDir;
 		if (curDir && wsRoot)
 		{
@@ -58,14 +50,7 @@ export class HbsContextTreeDataProvider implements vscode.TreeDataProvider<HbsTr
 		vscode.debug.activeDebugConsole.appendLine("Element selected = " + element.location);
 		return element;
   }
-
-	private getCurrentEditorDir(): string|undefined {
-		var openFile = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document.fileName : undefined;
-		if (!openFile) return undefined;
-		if (path.extname(openFile) != '.hbs') return undefined;
-		return path.dirname(openFile);
-	}
-
+	
 	private *getContextFiles(dir:string) {
 		const include = /\.(hbs|handlebars)\.json/i;
 		const dirents = fs.readdirSync(dir, { withFileTypes: true });

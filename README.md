@@ -1,5 +1,10 @@
 **How to use:**\
-Open a Handlebars file, select **Handlebars: Preview** from the command menu **or** right click on the editor tab.
+Open a Handlebars file, then 
+- select **Handlebars: Preview** from the command menu
+- **or** right click on the editor tab
+- **or** choose a context-file (ie. `*.hbs.js`) from the `Handlebars Previews - Contexts` section in the `Run and Debug` panel and click `Use`
+
+> you can drag the `Handlebars Previews - Contexts` section to the `Secondary Side Bar` (`View` &gt; `Appearance`) to keep it in view and allow free usage of the primary side bar
 
 # Features
 

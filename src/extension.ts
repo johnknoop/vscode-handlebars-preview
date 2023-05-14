@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import generateContext from "./context-generator/context-generator";
 import { commands, window, ExtensionContext, workspace, Uri, TextDocument } from 'vscode';
 import { PreviewPanelScope } from './preview-panel-scope';
@@ -8,6 +9,7 @@ import { partialsRegistered, findAndRegisterPartials, watchForPartials } from '.
 import { helpersRegistered, findAndRegisterHelpers, watchForHelpers } from './helpers';
 import { HbsTreeItem, HbsContextTreeDataProvider } from './context-data-tree-provider';
 
+let currentEditor: vscode.TextEditor | undefined = undefined;
 const panels: PreviewPanelScope[] = [];
 export const showErrorMessage = new Subject<{ message: string; panel: PreviewPanelScope; } | null>();
 
@@ -35,6 +37,13 @@ export function activate(context: ExtensionContext) {
 	});
 
 	workspace.onDidCloseTextDocument(doc => {
+		// current file was closed, refresh tree
+		var dir = doc && doc.languageId === 'handlebars' ? path.dirname(doc.fileName) : undefined;
+		if (treeView.workingDir == dir) {
+			treeView.workingDir = undefined;
+			treeView.refresh();
+		}
+
 		for (let i = panels.length - 1; i >= 0; i--) {
 			const panel = panels[i];
 
@@ -45,19 +54,31 @@ export function activate(context: ExtensionContext) {
 		}
 	});
 
+	window.onDidChangeActiveTextEditor(checkIsHandlebarsFile);
+
+	function checkIsHandlebarsFile(e: vscode.TextEditor | undefined) {
+		// let's keep last path when no editor is selected, but some files are still open
+		if (!e && vscode.window.visibleTextEditors.length > 0) return;
+		var dir = e && e.document.languageId === 'handlebars' ? path.dirname(e.document.fileName) : undefined;
+		if (dir) currentEditor = e;
+		if (treeView.workingDir != dir) {
+			treeView.workingDir = dir;
+			treeView.refresh();
+		}
+	}
+
 	const rootPath = vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
 		? vscode.workspace.workspaceFolders[0].uri.fsPath
 		: undefined;
-	const provider = new HbsContextTreeDataProvider(rootPath);
-	const onDidChangeActiveTextEditorHnd = vscode.window.onDidChangeActiveTextEditor(provider.onDidChangeActiveTextEditor.bind(provider));
-	vscode.window.registerTreeDataProvider('handlebarsContextChooser', provider);
+	const treeView = new HbsContextTreeDataProvider(rootPath);
+	vscode.window.registerTreeDataProvider('handlebarsContextChooser', treeView);
 	const refreshTreeCommand = commands.registerCommand('extension.refreshTree', async (uri: Uri) => {
 		// vscode.debug.activeDebugConsole.appendLine(`executing command  ${uri}`);
-		provider && provider.refresh();
+		treeView && treeView.refresh();
 	});
 	const useContextCommand = commands.registerCommand('extension.useContext', async (item: HbsTreeItem) => {
-		const templateUri = getActiveTemplateUri(undefined);
-		if (templateUri) {
+		if (currentEditor) {
+			const templateUri = currentEditor.document.uri;
 			await openPreviewPanelByUri(templateUri, item.location);
 		}
 	});
@@ -86,13 +107,20 @@ export function activate(context: ExtensionContext) {
 
 	context.subscriptions.push(previewCommand, ...watchForPartials(panels), generateContextFromExplorerCommand);
 	context.subscriptions.push(previewCommand, ...watchForHelpers(panels), generateContextFromExplorerCommand);
+
+	checkIsHandlebarsFile(vscode.window.activeTextEditor);
 }
 
 function getActiveTemplateUri(uri: Uri|undefined): Uri|null {
-	return uri ? uri
-		: window && window.activeTextEditor && window.activeTextEditor.document.languageId === 'handlebars'
-			? window.activeTextEditor.document.uri
-			: null;
+	if (uri) return uri;
+	// var editor = getActiveHbsTextEditor();
+	return currentEditor ? currentEditor.document.uri : null;
+}
+
+function getActiveHbsTextEditor(): vscode.TextEditor|null {
+	return window && window.activeTextEditor && window.activeTextEditor.document.languageId === 'handlebars'
+		? window.activeTextEditor
+		: null;
 }
 
 async function openPreviewPanelByUri(uri: Uri, contextFileName: string|undefined) {
