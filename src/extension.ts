@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as mail from '@sendgrid/mail';
 import generateContext from "./context-generator/context-generator";
 import { commands, window, ExtensionContext, workspace, Uri, TextDocument } from 'vscode';
 import { PreviewPanelScope } from './preview-panel-scope';
@@ -8,8 +9,10 @@ import { debounceTime, filter, take, repeat } from "rxjs/operators";
 import { partialsRegistered, findAndRegisterPartials, watchForPartials } from './partials';
 import { helpersRegistered, findAndRegisterHelpers, watchForHelpers } from './helpers';
 import { HbsTreeItem, HbsContextTreeDataProvider } from './context-data-tree-provider';
+import { getCompiledHtml } from './merger';
 
 let currentEditor: vscode.TextEditor | undefined = undefined;
+const extensionKey = 'handlebars-preview';
 const panels: PreviewPanelScope[] = [];
 export const showErrorMessage = new Subject<{ message: string; panel: PreviewPanelScope; } | null>();
 
@@ -20,6 +23,14 @@ function onPreviewPanelClosed(panel: PreviewPanelScope) {
 		}
 	}
 }
+
+const CfgSendGridApiKey = 'email.sendGrid.apiKey';
+const CfgSendFromEmail = 'email.fromEmailAddress';
+const CfgSendToEmail = 'email.toEmailAddress';
+
+const CmdRefreshTree = extensionKey + '.refreshTree';
+const CmdUseContext = extensionKey + '.useContext';
+const CmdSendEmail = extensionKey + '.sendPerEmail';
 
 export function activate(context: ExtensionContext) {
 	hookupErrorMessages();
@@ -72,14 +83,58 @@ export function activate(context: ExtensionContext) {
 		: undefined;
 	const treeView = new HbsContextTreeDataProvider(rootPath);
 	vscode.window.registerTreeDataProvider('handlebarsContextChooser', treeView);
-	const refreshTreeCommand = commands.registerCommand('extension.refreshTree', async (uri: Uri) => {
+	commands.registerCommand(CmdRefreshTree, async (uri: Uri) => {
 		// vscode.debug.activeDebugConsole.appendLine(`executing command  ${uri}`);
 		treeView && treeView.refresh();
 	});
-	const useContextCommand = commands.registerCommand('extension.useContext', async (item: HbsTreeItem) => {
+	commands.registerCommand(CmdUseContext, async (item: HbsTreeItem) => {
 		if (currentEditor) {
 			const templateUri = currentEditor.document.uri;
 			await openPreviewPanelByUri(templateUri, item.location);
+		}
+	});
+	commands.registerCommand(CmdSendEmail, async (item: HbsTreeItem) => {
+		if (!currentEditor) {
+			window.showErrorMessage("No Handlebars-file open");
+			return;
+		}
+		const cfg = vscode.workspace.getConfiguration(extensionKey);
+		if (!cfg.has(CfgSendGridApiKey)) {
+			window.showErrorMessage("No SendGrid API key provided");
+			return;
+		}
+		if (!cfg.has(CfgSendFromEmail)) {
+			window.showErrorMessage("No sender email-address provided");
+			return;
+		}
+		if (!cfg.has(CfgSendToEmail)) {
+			window.showErrorMessage("No target email-address provided");
+			return;
+		}
+		
+		await ensureInitialized(currentEditor.document.uri);
+
+		try {
+			var workspaceRoot = workspace.getWorkspaceFolder(currentEditor.document.uri)?.uri.fsPath
+			workspaceRoot = workspaceRoot ? workspaceRoot : path.dirname(currentEditor.document.fileName);
+			var tplName = path.relative(workspaceRoot, currentEditor.document.fileName);
+			var ctxName = path.relative(workspaceRoot, item.location ?? '');
+			const html = await getCompiledHtml(currentEditor.document, item.location ?? '');
+			const email = {
+				to: cfg.get(CfgSendToEmail) as string,
+				from: { email: cfg.get(CfgSendFromEmail) as string, name: 'Handlebars-Preview' },
+				subject: `Handlebars-Preview :: TPL=${tplName} CTX=${ctxName}`,
+				text: html,
+				html: html
+			};
+			// using Twilio SendGrid's v3 Node.js Library
+			// https://github.com/sendgrid/sendgrid-nodejs
+			mail.setApiKey(cfg.get(CfgSendGridApiKey) as string);
+			mail.send(email);
+			window.showInformationMessage(`Email has been sent to ${email.to}`);
+		}
+		catch (error:any) {
+			window.showErrorMessage(`Error sending email: ${error?.message}`);
 		}
 	});
 
@@ -138,16 +193,8 @@ async function openPreviewPanelByUri(uri: Uri, contextFileName: string|undefined
 	await openPreviewPanelByDocument(doc, contextFileName);
 }
 
-async function openPreviewPanelByDocument(doc: TextDocument, contextFileName: string|undefined) {
-	const existingPanel = panels.find(x => x.editorFilePath() === doc.fileName);
-
-	if (existingPanel) {
-		// Remove existing panel and open new one
-		existingPanel.disposePreviewPanel();
-		panels.splice(panels.indexOf(existingPanel), 1);
-	}
-
-	const workspaceRoot = workspace.getWorkspaceFolder(doc.uri);
+async function ensureInitialized(uri:Uri) {
+	const workspaceRoot = workspace.getWorkspaceFolder(uri);
 
 	if (!workspaceRoot) {
 		return;
@@ -160,6 +207,18 @@ async function openPreviewPanelByDocument(doc: TextDocument, contextFileName: st
 	if (!helpersRegistered(workspaceRoot.uri.fsPath)) {
 		await findAndRegisterHelpers(workspaceRoot);
 	}
+}
+
+async function openPreviewPanelByDocument(doc: TextDocument, contextFileName: string|undefined) {
+	const existingPanel = panels.find(x => x.editorFilePath() === doc.fileName);
+
+	if (existingPanel) {
+		// Remove existing panel and open new one
+		existingPanel.disposePreviewPanel();
+		panels.splice(panels.indexOf(existingPanel), 1);
+	}
+
+	await ensureInitialized(doc.uri);
 
 	try {
 		const panel = new PreviewPanelScope(doc, contextFileName, onPreviewPanelClosed);

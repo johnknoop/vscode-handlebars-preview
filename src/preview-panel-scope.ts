@@ -1,9 +1,8 @@
 import { WebviewPanel, TextDocumentChangeEvent, ViewColumn, Uri, workspace, window, TextDocument } from 'vscode';
-import { promises, existsSync } from 'fs';
-import { load as loadDocument } from "cheerio";
+import { existsSync } from 'fs';
 import * as path from "path";
-import { compile, TemplateDelegate } from 'handlebars';
-import { showErrorMessage } from "./extension";
+import { showErrorMessage } from './extension';
+import { getCompiledHtml } from './merger';
 
 export class PreviewPanelScope {
 	private readonly panel: WebviewPanel;
@@ -29,17 +28,20 @@ export class PreviewPanelScope {
 	}
 
 	async update() {
-		const html = await getCompiledHtml(this.document, this.contextFileName, this);
-
-		if (html) {
+		showErrorMessage.next(null);
+		try {
+			const html = await getCompiledHtml(this.document, this.contextFileName);
 			this.panel.webview.html = html;
+		} catch (err) {
+			var message = err?.toString();
+			showErrorMessage.next({ panel: this, message: `<p>Error rendering handlebars template:</p><pre>${message}</pre>` });
 		}
 	}
 
 	showErrorPage(message: string) {
 		this.panel.webview.html = `
-		<html style="height: 100%;">
-		<body style="height: 100%; display: flex; align-items: center; align-content: center; justify-content: center;"><span>${message}</span></body>
+		<html>
+		<body style="height: 100vh; margin 50%; display: flex; align-items: center; align-content: center; justify-content: center;"><span>${message}</span></body>
 		</html>
 		`;
 	}
@@ -79,99 +81,4 @@ function getDefaultContextFileName(templateFileName: string): string {
 	}
 
 	return contextFileName;
-}
-
-function renderTemplate(template: TemplateDelegate, templateContext, panel: PreviewPanelScope) {
-	try {
-		const html = template(templateContext);
-
-		showErrorMessage.next(null);
-
-		return html;
-	} catch (err) {
-		showErrorMessage.next({ panel: panel, message: `Error rendering handlebars template: ${JSON.stringify(err)}` });
-		return false;
-	}
-}
-
-async function getCompiledHtml(templateDocument: TextDocument, contextFile: string, panel: PreviewPanelScope): Promise<string | false> {
-	const context = await getContextData(contextFile);
-	const template = templateDocument.getText();
-
-	try {
-		const compiledTemplate = compile(template);
-		const rendered = renderTemplate(compiledTemplate, context, panel);
-		
-		if (rendered === false) {
-			return false;
-		}
-
-		return repathLocalFiles(rendered || '', templateDocument);
-
-	} catch (err) {
-		showErrorMessage.next({ panel: panel, message: `Error rendering handlebars template: ${JSON.stringify(err)}` });
-		return false;
-	}
-}
-
-async function getContextData(contextFile: string) {
-	try {
-		var contextJson = await promises.readFile(contextFile, 'utf8');
-		return JSON.parse(contextJson);
-	} catch (err) {
-		return {};
-	}
-}
-
-function repathLocalFiles(html: string, templateDocument: TextDocument) {
-	const $ = loadDocument(html);
-
-	// Images
-	$('img')
-		.filter((i, elm) =>
-			// satisfy typing
-			elm.type === 'tag' &&
-			// Skip data-urls
-			elm.attribs['src'].trimLeft().slice(0, 5).toLowerCase() !== 'data:' &&
-			// Skip remote images
-			!elm.attribs['src'].toLowerCase().startsWith('http')
-		)
-		.each((i, elm) => {
-			// satisfy typing
-			if (elm.type === 'tag') {
-				elm.attribs['src'] = Uri.file(path.join(path.dirname(templateDocument.fileName), elm.attribs['src'])).with({ scheme: 'vscode-resource' }).toString();
-			}
-		});
-	
-	// CSS
-	$('link')
-		.filter((i, elm) => 
-			// satisfy typing
-			elm.type === 'tag' &&
-			// Skip data-urls
-			elm.attribs['href'].trimLeft().slice(0, 5).toLowerCase() !== 'data:' &&
-			// Skip remote css
-			!elm.attribs['href'].toLowerCase().startsWith('http') &&
-			// Ensure only .css files
-			elm.attribs['href'].toLowerCase().endsWith('.css')
-		)
-		.each((i, elm) => {
-			// satisfy typing
-			if (elm.type === 'tag') {
-
-				const cacheClear = new Date().getTime();
-
-				const newHref = elm.attribs['src'] = Uri
-					.file(path.join(path.dirname(templateDocument.fileName), elm.attribs['href']))
-					.with({ scheme: 'vscode-resource' }).toString();
-
-				elm.attribs['href'] = `${newHref}?${cacheClear}`;
-			}
-		});
-
-	const repathedHtml = $.html({
-		decodeEntities: true
-	});
-
-	return repathedHtml;
 }

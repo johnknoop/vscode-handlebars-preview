@@ -12,6 +12,8 @@ Open a Handlebars file, then
 ✅ [Automatically scans your workspace folder(s) for partials and helpers](#partials)\
 ✅ [Auto-refresh](#auto-refresh)\
 ✅ [Generate context file from a template](#generate-context-file-from-template)
+✅ [Send test-output per email](#send-test-output-per-email)
+
 
 ## Partials
 Partials are automatically discovered and given names based off of the workspace folder root. So if these are the subfolders of the folder you've opened in VS Code:
@@ -54,13 +56,19 @@ Right-click on a handlebars file in the sidebar or on the editor tab and select 
 
 A new file named `{yourfile}.json` will be created and populated with sample data.
 
-> #### Current limitations of context generation:
+### Current limitations of context generation:
 > 🙁 [Block parameters](https://handlebarsjs.com/guide/block-helpers.html#block-parameters) in `each`-constructs are not supported\
 > 🙁 Path segments (`../`) are currently not supported.
 > 
 > If you're using any of these features in your template, the resulting json will need some manual fixing.
 > 
 > Feel free to make a pull request if these limitations are bothering you.
+
+## Send test-output per email
+This addin can send the preview output via Email (using the [SendGrid API](https://sendgrid.com/solutions/email-api/)). To enable the `send` button in the `Handlebars Previews - Contexts` section of the `Run and Debug` panel, you need to configure the 3 related settings:
+- `handlebars-preview.email.sendGrid.apiKey`
+- `handlebars-preview.email.fromEmailAddress`
+- `handlebars-preview.email.toEmailAddress`
 
 # Report an issue
 
