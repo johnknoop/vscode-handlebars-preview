@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as mail from '@sendgrid/mail';
+import * as globals from './globals';
 import generateContext from "./context-generator/context-generator";
 import { commands, window, ExtensionContext, workspace, Uri, TextDocument } from 'vscode';
 import { PreviewPanelScope } from './preview-panel-scope';
@@ -12,7 +13,6 @@ import { HbsTreeItem, HbsContextTreeDataProvider } from './context-data-tree-pro
 import { getCompiledHtml } from './merger';
 
 let currentEditor: vscode.TextEditor | undefined = undefined;
-const extensionKey = 'handlebars-preview';
 const panels: PreviewPanelScope[] = [];
 export const showErrorMessage = new Subject<{ message: string; panel: PreviewPanelScope; } | null>();
 
@@ -23,14 +23,6 @@ function onPreviewPanelClosed(panel: PreviewPanelScope) {
 		}
 	}
 }
-
-const CfgSendGridApiKey = 'email.sendGrid.apiKey';
-const CfgSendFromEmail = 'email.fromEmailAddress';
-const CfgSendToEmail = 'email.toEmailAddress';
-
-const CmdRefreshTree = extensionKey + '.refreshTree';
-const CmdUseContext = extensionKey + '.useContext';
-const CmdSendEmail = extensionKey + '.sendPerEmail';
 
 export function activate(context: ExtensionContext) {
 	hookupErrorMessages();
@@ -73,6 +65,14 @@ export function activate(context: ExtensionContext) {
 		var dir = e && e.document.languageId === 'handlebars' ? path.dirname(e.document.fileName) : undefined;
 		if (dir) currentEditor = e;
 		if (treeView.workingDir != dir) {
+			treeView.hbsTemplateFilename = e ? e.document.fileName : undefined;
+			const cfg = vscode.workspace.getConfiguration(globals.extensionKey);
+			treeView.contextFilter = globals.DefaultContextFilter;
+			if (e && cfg.get(globals.CfgContextFilter)) {
+				var parts = path.parse(e.document.fileName);
+				var hbsFilename = parts.name.toLowerCase();
+				treeView.contextFilter = new RegExp(hbsFilename + ".*" + String.raw`\.(hbs|handlebars)\.json`, 'i');
+			}
 			treeView.workingDir = dir;
 			treeView.refresh();
 		}
@@ -83,31 +83,31 @@ export function activate(context: ExtensionContext) {
 		: undefined;
 	const treeView = new HbsContextTreeDataProvider(rootPath);
 	vscode.window.registerTreeDataProvider('handlebarsContextChooser', treeView);
-	commands.registerCommand(CmdRefreshTree, async (uri: Uri) => {
+	commands.registerCommand(globals.CmdRefreshTree, async (uri: Uri) => {
 		// vscode.debug.activeDebugConsole.appendLine(`executing command  ${uri}`);
 		treeView && treeView.refresh();
 	});
-	commands.registerCommand(CmdUseContext, async (item: HbsTreeItem) => {
+	commands.registerCommand(globals.CmdUseContext, async (item: HbsTreeItem) => {
 		if (currentEditor) {
 			const templateUri = currentEditor.document.uri;
 			await openPreviewPanelByUri(templateUri, item.location);
 		}
 	});
-	commands.registerCommand(CmdSendEmail, async (item: HbsTreeItem) => {
+	commands.registerCommand(globals.CmdSendEmail, async (item: HbsTreeItem) => {
 		if (!currentEditor) {
 			window.showErrorMessage("No Handlebars-file open");
 			return;
 		}
-		const cfg = vscode.workspace.getConfiguration(extensionKey);
-		if (!cfg.has(CfgSendGridApiKey)) {
+		const cfg = vscode.workspace.getConfiguration(globals.extensionKey);
+		if (!cfg.has(globals.CfgSendGridApiKey)) {
 			window.showErrorMessage("No SendGrid API key provided");
 			return;
 		}
-		if (!cfg.has(CfgSendFromEmail)) {
+		if (!cfg.has(globals.CfgSendFromEmail)) {
 			window.showErrorMessage("No sender email-address provided");
 			return;
 		}
-		if (!cfg.has(CfgSendToEmail)) {
+		if (!cfg.has(globals.CfgSendToEmail)) {
 			window.showErrorMessage("No target email-address provided");
 			return;
 		}
@@ -121,15 +121,15 @@ export function activate(context: ExtensionContext) {
 			var ctxName = path.relative(workspaceRoot, item.location ?? '');
 			const html = await getCompiledHtml(currentEditor.document, item.location ?? '');
 			const email = {
-				to: cfg.get(CfgSendToEmail) as string,
-				from: { email: cfg.get(CfgSendFromEmail) as string, name: 'Handlebars-Preview' },
+				to: cfg.get(globals.CfgSendToEmail) as string,
+				from: { email: cfg.get(globals.CfgSendFromEmail) as string, name: 'Handlebars-Preview' },
 				subject: `Handlebars-Preview :: TPL=${tplName} CTX=${ctxName}`,
 				text: html,
 				html: html
 			};
 			// using Twilio SendGrid's v3 Node.js Library
 			// https://github.com/sendgrid/sendgrid-nodejs
-			mail.setApiKey(cfg.get(CfgSendGridApiKey) as string);
+			mail.setApiKey(cfg.get(globals.CfgSendGridApiKey) as string);
 			mail.send(email);
 			window.showInformationMessage(`Email has been sent to ${email.to}`);
 		}

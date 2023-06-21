@@ -85,7 +85,7 @@
 			]
 		},
 		"views": {
-			"debug": [
+			"explorer": [
 				{
 					"_documentation": "https://code.visualstudio.com/api/extension-guides/tree-view",
 					"id": "handlebarsContextChooser",
@@ -113,6 +113,12 @@
           "default": null,
 					"scope": "resource",
           "description": "The email-address to send the email to"
+        },
+        "handlebars-preview.context.filter": {
+          "type": ["boolean"],
+          "default": true,
+					"scope": "resource",
+          "description": "Context files panel: Only show files matching active template name"
         }
       }
 		}

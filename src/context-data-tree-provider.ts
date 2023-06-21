@@ -1,10 +1,13 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as globals from './globals';
 
 export class HbsContextTreeDataProvider implements vscode.TreeDataProvider<HbsTreeItem> {
 
 	workingDir: string|undefined;
+	hbsTemplateFilename: string|undefined;
+	contextFilter:RegExp = globals.DefaultContextFilter;
 	private treeChangedEvent: vscode.EventEmitter<HbsTreeItem | null | undefined> = new vscode.EventEmitter<HbsTreeItem | null | undefined>();
 
 	constructor(private workspaceRoot: string|undefined) {}
@@ -23,9 +26,13 @@ export class HbsContextTreeDataProvider implements vscode.TreeDataProvider<HbsTr
 		var list = new Array<HbsTreeItem>();
 		let curDir = element ? element.location : this.workingDir;
 		var wsRoot = this.workspaceRoot ? this.workspaceRoot : curDir;
+		
+		// const cfg = vscode.workspace.getConfiguration(globals.extensionKey);
+		// var contextFilter = cfg.get(globals.CfgContextFilter) ? /\.(hbs|handlebars)\.json/i : globals.DefaultContextFilter;
+
 		if (curDir && wsRoot)
 		{
-			for (const file of this.getContextFiles(curDir)) {
+			for (const file of this.getContextFiles(curDir, this.contextFilter)) {
 				list.push(new HbsTreeItem(file.name, file.path, false, vscode.TreeItemCollapsibleState.None));
 			}
 			if (curDir != wsRoot) {
@@ -51,12 +58,12 @@ export class HbsContextTreeDataProvider implements vscode.TreeDataProvider<HbsTr
 		return element;
   }
 	
-	private *getContextFiles(dir:string) {
-		const include = /\.(hbs|handlebars)\.json/i;
+	private *getContextFiles(dir:string, filter:RegExp = /\.(hbs|handlebars)\.json/i) {
 		const dirents = fs.readdirSync(dir, { withFileTypes: true });
 		for (const dirent of dirents) {
 			const res = path.resolve(dir, dirent.name);
-			if (!dirent.isDirectory() && include.test(dirent.name)) {
+			var isMatch = filter.test(dirent.name);
+			if (!dirent.isDirectory() && isMatch) {
 				yield { name: dirent.name, path: res };
 			}
 		}
