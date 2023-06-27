@@ -1,7 +1,7 @@
+import * as path from "path";
+import { globals } from './globals';
 import { WebviewPanel, TextDocumentChangeEvent, ViewColumn, Uri, workspace, window, TextDocument } from 'vscode';
 import { existsSync } from 'fs';
-import * as path from "path";
-import { showErrorMessage } from './extension';
 import { getCompiledHtml } from './merger';
 
 export class PreviewPanelScope {
@@ -28,13 +28,13 @@ export class PreviewPanelScope {
 	}
 
 	async update() {
-		showErrorMessage.next(null);
+		globals.showErrorMessage.next(null);
 		try {
 			const html = await getCompiledHtml(this.document, this.contextFileName);
 			this.panel.webview.html = html;
 		} catch (err) {
 			var message = err?.toString();
-			showErrorMessage.next({ panel: this, message: `<p>Error rendering handlebars template:</p><pre>${message}</pre>` });
+			globals.showErrorMessage.next({ panel: this, message: `<p>Error rendering handlebars template:</p><pre>${message}</pre>` });
 		}
 	}
 

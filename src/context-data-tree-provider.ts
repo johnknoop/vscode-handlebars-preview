@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as globals from './globals';
+import { globals } from './globals';
 
 export class HbsContextTreeDataProvider implements vscode.TreeDataProvider<HbsTreeItem> {
 
@@ -26,9 +26,6 @@ export class HbsContextTreeDataProvider implements vscode.TreeDataProvider<HbsTr
 		var list = new Array<HbsTreeItem>();
 		let curDir = element ? element.location : this.workingDir;
 		var wsRoot = this.workspaceRoot ? this.workspaceRoot : curDir;
-		
-		// const cfg = vscode.workspace.getConfiguration(globals.extensionKey);
-		// var contextFilter = cfg.get(globals.CfgContextFilter) ? /\.(hbs|handlebars)\.json/i : globals.DefaultContextFilter;
 
 		if (curDir && wsRoot)
 		{
@@ -82,11 +79,4 @@ export class HbsTreeItem extends vscode.TreeItem {
     this.description = this.location;
 		this.contextValue = this.location ? this.isDir ? "folder" : "file" : "other";
   }
-
-	/*
-  iconPath = {
-    light: path.join(__filename, '..', '..', 'resources', 'light', 'directory.svg'),
-    dark: path.join(__filename, '..', '..', 'resources', 'dark', 'directory.svg')
-  };
-	*/
 }
