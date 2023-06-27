@@ -1,4 +1,3 @@
-import { promises } from 'fs';
 import { registerHelper } from 'handlebars';
 import { workspace, WorkspaceFolder, RelativePattern } from 'vscode';
 import { PreviewPanelScope } from './preview-panel-scope';

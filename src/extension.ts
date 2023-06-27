@@ -1,140 +1,79 @@
-import { commands, window, ExtensionContext, workspace, Uri, TextDocument } from 'vscode';
-import { PreviewPanelScope } from './preview-panel-scope';
+import * as vscode from 'vscode';
+import * as path from 'path';
+import * as treeview from './treeview';
+import * as sendgrid from './sendgrid';
+import { globals } from './globals';
+import { watchForPartials } from './partials';
+import { watchForHelpers } from './helpers';
 import generateContext from "./context-generator/context-generator";
-import { Subject, race } from "rxjs";
-import { debounceTime, filter, take, repeat } from "rxjs/operators";
-import { partialsRegistered, findAndRegisterPartials, watchForPartials } from './partials';
-import { helpersRegistered, findAndRegisterHelpers, watchForHelpers } from './helpers';
 
-const panels: PreviewPanelScope[] = [];
-export const showErrorMessage = new Subject<{ message: string; panel: PreviewPanelScope; } | null>();
+export function activate(context: vscode.ExtensionContext) {
+	globals.hookupErrorMessages();
 
-function onPreviewPanelClosed(panel: PreviewPanelScope) {
-	for (let i = panels.length - 1; i >= 0; i--) {
-		if (panels[i] === panel) {
-			panels.splice(i, 1);
-		}
-	}
-}
-
-export function activate(context: ExtensionContext) {
-	hookupErrorMessages();
-
-	workspace.onDidChangeTextDocument(async e => {
-		for (const panel of panels) {
+	vscode.workspace.onDidChangeTextDocument(async e => {
+		for (const panel of globals.panels) {
 			await panel.workspaceDocumentChanged(e);
 		}
 	});
 
-	workspace.onDidSaveTextDocument(async doc => {
-		for (const panel of panels) {
+	vscode.workspace.onDidSaveTextDocument(async doc => {
+		for (const panel of globals.panels) {
 			await panel.workspaceDocumentSaved(doc);
 		}
 	});
 
-	workspace.onDidCloseTextDocument(doc => {
-		for (let i = panels.length - 1; i >= 0; i--) {
-			const panel = panels[i];
+	vscode.workspace.onDidCloseTextDocument(doc => {
+		for (let i = globals.panels.length - 1; i >= 0; i--) {
+			const panel = globals.panels[i];
 
 			if (panel.editorFilePath() === doc.fileName) {
 				panel.disposePreviewPanel();
-				panels.splice(i, 1);
+				globals.panels.splice(i, 1);
 			}
 		}
 	});
 
-	const generateContextFromExplorerCommand = commands.registerCommand('extension.generateContextFile', async (uri: Uri) => {
+	vscode.window.onDidChangeActiveTextEditor(onDidChangeActiveTextEditor);
+
+	const generateContextFromExplorerCommand = vscode.commands.registerCommand('extension.generateContextFile', async (uri: vscode.Uri) => {
 		const templateUri = uri
 			? uri
-			: window && window.activeTextEditor && window.activeTextEditor.document.languageId === 'handlebars'
-				? window.activeTextEditor.document.uri
+			: vscode.window && vscode.window.activeTextEditor && vscode.window.activeTextEditor.document.languageId === 'handlebars'
+				? vscode.window.activeTextEditor.document.uri
 				: null;
 
 		if (!templateUri) {
-			window.showInformationMessage('Please save the template in order to generate context file');
+			vscode.window.showInformationMessage('Please save the template in order to generate context file');
 			return;
 		}
 
 		await generateContext(templateUri!.fsPath);
 	});
 
-	const previewCommand = commands.registerCommand('extension.previewHandlebars', async (uri: Uri) => {
-		const templateUri = uri
-			? uri
-			: window && window.activeTextEditor && window.activeTextEditor.document.languageId === 'handlebars'
-				? window.activeTextEditor.document.uri
-				: null;
-
+	const previewCommand = vscode.commands.registerCommand('extension.previewHandlebars', async (uri: vscode.Uri) => {
+		const templateUri = globals.getActiveTemplateUri(uri);
 		if (templateUri) {
-			await openPreviewPanelByUri(templateUri);
+			await globals.openPreviewPanelByUri(templateUri, undefined);
 		}
 	});
 
-	context.subscriptions.push(previewCommand, ...watchForPartials(panels), generateContextFromExplorerCommand);
-	context.subscriptions.push(previewCommand, ...watchForHelpers(panels), generateContextFromExplorerCommand);
-}
+	treeview.onActivation(context);
+	sendgrid.onActivation(context);
 
-async function openPreviewPanelByUri(uri: Uri) {
-	const existingPanel = panels.find(x => x.editorFilePath() === uri.fsPath);
+	context.subscriptions.push(previewCommand, ...watchForPartials(globals.panels), generateContextFromExplorerCommand);
+	context.subscriptions.push(previewCommand, ...watchForHelpers(globals.panels), generateContextFromExplorerCommand);
 
-	if (existingPanel) {
-		// Remove existing panel and open new one
-		existingPanel.disposePreviewPanel();
-		panels.splice(panels.indexOf(existingPanel), 1);
-	}
-
-	const doc = workspace.textDocuments.find(x => x.fileName === uri.fsPath)
-		|| await workspace.openTextDocument(uri);
-
-	await openPreviewPanelByDocument(doc);
-}
-
-async function openPreviewPanelByDocument(doc: TextDocument) {
-	const existingPanel = panels.find(x => x.editorFilePath() === doc.fileName);
-
-	if (existingPanel) {
-		// Remove existing panel and open new one
-		existingPanel.disposePreviewPanel();
-		panels.splice(panels.indexOf(existingPanel), 1);
-	}
-
-	const workspaceRoot = workspace.getWorkspaceFolder(doc.uri);
-
-	if (!workspaceRoot) {
-		return;
-	}
-
-	if (!partialsRegistered(workspaceRoot.uri.fsPath)) {
-		await findAndRegisterPartials(workspaceRoot);
-	}
-
-	if (!helpersRegistered(workspaceRoot.uri.fsPath)) {
-		await findAndRegisterHelpers(workspaceRoot);
-	}
-
-	try {
-		const panel = new PreviewPanelScope(doc, onPreviewPanelClosed);
-		await panel.update();
-		panels.push(panel);
-	} catch (error) {
-		throw error;
-	}
-}
-
-function hookupErrorMessages() {
-	const errorMessages = showErrorMessage.pipe(filter(x => x !== null), debounceTime(1000));
-	const resets = showErrorMessage.pipe(filter(x => x === null));
-
-	race(errorMessages, resets)
-		.pipe(take(1)).pipe(repeat())
-		.subscribe(msg => {
-			if (msg !== null) {
-				msg.panel.showErrorPage(msg.message);
-			}
-		});
+	onDidChangeActiveTextEditor(vscode.window.activeTextEditor);
 }
 
 export function deactivate() {
-	panels.forEach(x => x.disposePreviewPanel());
+	globals.panels.forEach(x => x.disposePreviewPanel());
 }
+
+	function onDidChangeActiveTextEditor(e: vscode.TextEditor | undefined) {
+		// let's keep last path when no editor is selected, but some files are still open
+		if (!e && vscode.window.visibleTextEditors.length > 0) return;
+		var dir = e && e.document.languageId === 'handlebars' ? path.dirname(e.document.fileName) : undefined;
+		if (dir) globals.currentEditor = e;
+	}
 

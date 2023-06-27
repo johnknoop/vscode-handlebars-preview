@@ -30,6 +30,18 @@
 			{
 				"command": "extension.generateContextFile",
 				"title": "Handlebars: Generate context file"
+			},
+			{
+				"command": "handlebars-preview.refreshTree",
+				"title": "Reload"
+			},
+			{
+				"command": "handlebars-preview.useContext",
+				"title": "Use"
+			},
+			{
+				"command": "handlebars-preview.sendPerEmail",
+				"title": "Send"
 			}
 		],
 		"menus": {
@@ -51,7 +63,64 @@
 					"when": "resourceLangId == handlebars",
 					"group": "Handlebars"
 				}
+			],
+			"view/title": [
+				{
+					"command": "handlebars-preview.refreshTree",
+					"when": "view == handlebarsContextChooser",
+					"group": "navigation"
+				}
+			],
+			"view/item/context": [
+				{
+					"command": "handlebars-preview.useContext",
+					"when": "view == handlebarsContextChooser && viewItem == file",
+					"group": "inline"
+				},
+				{
+					"command": "handlebars-preview.sendPerEmail",
+					"when": "view == handlebarsContextChooser && viewItem == file && config.handlebars-preview.email.sendGrid.apiKey && config.handlebars-preview.email.fromEmailAddress && config.handlebars-preview.email.toEmailAddress",
+					"group": "inline"
+				}
 			]
+		},
+		"views": {
+			"explorer": [
+				{
+					"_documentation": "https://code.visualstudio.com/api/extension-guides/tree-view",
+					"id": "handlebarsContextChooser",
+					"name": "Handlebars Preview - Contexts"
+				}
+			]
+		},
+		"configuration": {
+			"title": "Handlebars Preview",
+      "properties": {
+        "handlebars-preview.email.sendGrid.apiKey": {
+          "type": ["string", "null"],
+          "default": null,
+					"scope": "resource",
+          "description": "Your SendGrid API key (see https://sendgrid.com/solutions/email-api/)"
+        },
+        "handlebars-preview.email.fromEmailAddress": {
+          "type": ["string", "null"],
+          "default": null,
+					"scope": "resource",
+          "description": "The sender email-address to use"
+        },
+        "handlebars-preview.email.toEmailAddress": {
+          "type": ["string", "null"],
+          "default": null,
+					"scope": "resource",
+          "description": "The email-address to send the email to"
+        },
+        "handlebars-preview.context.filter": {
+          "type": ["boolean"],
+          "default": true,
+					"scope": "resource",
+          "description": "Context files panel: Only show files matching active template name"
+        }
+      }
 		}
 	},
 	"scripts": {
@@ -75,6 +144,7 @@
 		"vscode": "^1.1.37"
 	},
 	"dependencies": {
+		"@sendgrid/mail": "^7.7.0",
 		"cheerio": "^1.0.0-rc.3",
 		"handlebars": "^4.3.0",
 		"rxjs": "^6.5.2"
