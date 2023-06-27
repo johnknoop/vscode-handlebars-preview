@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { globals } from './globals';
-import generateContext from "./context-generator/context-generator";
-import { watchForPartials } from './partials';
-import { watchForHelpers } from './helpers';
 import * as treeview from './treeview';
 import * as sendgrid from './sendgrid';
+import { globals } from './globals';
+import { watchForPartials } from './partials';
+import { watchForHelpers } from './helpers';
+import generateContext from "./context-generator/context-generator";
 
 export function activate(context: vscode.ExtensionContext) {
 	globals.hookupErrorMessages();

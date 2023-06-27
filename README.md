@@ -6,6 +6,8 @@ Open a Handlebars file, then
 
 > you can drag the `Handlebars Previews - Contexts` section to the `Secondary Side Bar` (`View` &gt; `Appearance`) to keep it in view and allow free usage of the primary side bar
 
+> By default, the `Contexts` sidebar-section filters all context-files starting with the same name as the currently edited handlebars filename. You can change this behaviour using the `handlebars-preview.context.filter` setting.
+
 # Features
 
 ✅ Image support\
@@ -13,7 +15,6 @@ Open a Handlebars file, then
 ✅ [Auto-refresh](#auto-refresh)\
 ✅ [Generate context file from a template](#generate-context-file-from-template)
 ✅ [Send test-output per email](#send-test-output-per-email)
-
 
 ## Partials
 Partials are automatically discovered and given names based off of the workspace folder root. So if these are the subfolders of the folder you've opened in VS Code:
@@ -65,7 +66,7 @@ A new file named `{yourfile}.json` will be created and populated with sample dat
 > Feel free to make a pull request if these limitations are bothering you.
 
 ## Send test-output per email
-This addin can send the preview output via Email (using the [SendGrid API](https://sendgrid.com/solutions/email-api/)). To enable the `send` button in the `Handlebars Previews - Contexts` section of the `Run and Debug` panel, you need to configure the 3 related settings:
+This addin can send the preview output via Email (using the [SendGrid API](https://sendgrid.com/solutions/email-api/)). To enable the `send` button in the `Handlebars Previews - Contexts` section of the `Explorer` panel, you need to configure the 3 related settings:
 - `handlebars-preview.email.sendGrid.apiKey`
 - `handlebars-preview.email.fromEmailAddress`
 - `handlebars-preview.email.toEmailAddress`
