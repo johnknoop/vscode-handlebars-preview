@@ -1,4 +1,4 @@
-import { RootScope } from "../../src/context-generator/array-scope-parser";
+import { RootScope } from '../../src/context-generator/array-scope-parser';
 
 test('Returns nested if dots in name', () => {
 	const scope = new RootScope(`{{#each someObject.reviewers}}          
@@ -16,7 +16,7 @@ test('Returns nested if dots in name', () => {
 		`);
 
 	const result = scope.getExpressions();
-	expect(result).toHaveProperty("someObject.reviewers");
+	expect(result).toHaveProperty('someObject.reviewers');
 });
 
 test('should return all subscopes', () => {
@@ -40,16 +40,16 @@ test('should return all subscopes', () => {
 type CorrectResult = {
 	someObject: {
 		reviewers: Array<{
-			firstName,
-			lastName,
-			email,
-			age,
+			firstName;
+			lastName;
+			email;
+			age;
 			deepArray: Array<{
-				banana
-			}>,
-			orange
-		}>
-	}
+				banana;
+			}>;
+			orange;
+		}>;
+	};
 };
 
 test('should extract properties of each scope', () => {

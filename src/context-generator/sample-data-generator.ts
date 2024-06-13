@@ -15,12 +15,22 @@ export default function (fieldName: string): number | boolean | string {
 }
 
 const numericTells = [
-	'(?<!mess)age', 'number', 'length', 'height', 'width', 'size',
-	'index', 'order', 'ordinal', 'quantity', 'id', 'sum'
+	'(?<!mess)age',
+	'number',
+	'length',
+	'height',
+	'width',
+	'size',
+	'index',
+	'order',
+	'ordinal',
+	'quantity',
+	'id',
+	'sum',
 ];
 
 function tryNumeric(fieldName: string): boolean {
-	return numericTells.some(x => fieldName.match(new RegExp(`${x}$`, 'i')));
+	return numericTells.some((x) => fieldName.match(new RegExp(`${x}$`, 'i')));
 }
 
 function tryBoolean(fieldName: string): boolean {
@@ -55,34 +65,34 @@ const domainNames = ['example.com', 'example.net', 'example.org'];
 function getStringSample(fieldName: string): string {
 	const normalizedFieldName = fieldName.toLowerCase();
 
-	if (lastNameTells.some(x => normalizedFieldName.includes(x))) {
+	if (lastNameTells.some((x) => normalizedFieldName.includes(x))) {
 		return lastNames[Math.floor(Math.random() * lastNames.length)];
 	}
-	
-	if (firstNameTells.some(x => normalizedFieldName.includes(x))) {
+
+	if (firstNameTells.some((x) => normalizedFieldName.includes(x))) {
 		return firstNames[Math.floor(Math.random() * firstNames.length)];
 	}
 
-	if (cityTells.some(x => normalizedFieldName.includes(x))) {
+	if (cityTells.some((x) => normalizedFieldName.includes(x))) {
 		return cities[Math.floor(Math.random() * cities.length)];
 	}
 
-	if (countryTells.some(x => normalizedFieldName.includes(x))) {
+	if (countryTells.some((x) => normalizedFieldName.includes(x))) {
 		return countries[Math.floor(Math.random() * countries.length)];
 	}
 
-	if (colorTells.some(x => normalizedFieldName.includes(x))) {
+	if (colorTells.some((x) => normalizedFieldName.includes(x))) {
 		return colors[Math.floor(Math.random() * colors.length)];
 	}
 
-	if (emailTells.some(x => normalizedFieldName.includes(x))) {
+	if (emailTells.some((x) => normalizedFieldName.includes(x))) {
 		const domain = domainNames[Math.floor(Math.random() * domainNames.length)];
 		const name = firstNames[Math.floor(Math.random() * firstNames.length)].toLowerCase().replace(/\W/g, '-');
 
 		return `${name}@${domain}`;
 	}
 
-	if (urlTells.some(x => normalizedFieldName.includes(x))) {
+	if (urlTells.some((x) => normalizedFieldName.includes(x))) {
 		return 'https://www.example.com';
 	}
 

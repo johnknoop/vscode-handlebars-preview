@@ -31,11 +31,11 @@ class ArrayScope implements Scope {
 
 			// Append everything up until the start of the child to the body
 			this.body = this.body + this.hbs.substring(lastChildEndPosition, nextChild.index);
-			
+
 			const childHbs = this.hbs.slice(nextChild.index + nextChild[0].length);
 			const childArrayScope = new ArrayScope(childHbs, 'subscope', childArrayName.trim());
 			this.childScopes.push(childArrayScope);
-			
+
 			lastChildEndPosition = nextChild.index + nextChild[0].length + childArrayScope.endPosition!;
 			// Remove the child scopes body from the HBS
 			//this.hbs = this.hbs.slice(nextChild.index + nextChild[0].length + childArrayScope.endPosition!);
@@ -52,16 +52,16 @@ class ArrayScope implements Scope {
 		}
 	}
 
-	private findClosingExpression(content: string) : { body: string; endPosition: number; } {
+	private findClosingExpression(content: string): { body: string; endPosition: number } {
 		const closer = content.match(/{{\s*\/\s*?each\s*?}}/);
 
 		if (!closer || !closer.index) {
-			throw new Exception("Array scope not closed (missing /each)");
+			throw new Exception('Array scope not closed (missing /each)');
 		}
 
 		return {
 			body: content.substring(0, closer.index),
-			endPosition: closer.index + closer[0].length
+			endPosition: closer.index + closer[0].length,
 		};
 	}
 
@@ -89,12 +89,14 @@ export class RootScope extends ArrayScope implements Scope {
 					currentScopeToPopulate[prop] = {};
 					currentScopeToPopulate = currentScopeToPopulate[prop];
 				} else {
-					currentScopeToPopulate[prop] = [{
-						...childScope.getExpressions(),
-						...this.getChildExpressions(childScope)
-					}];
+					currentScopeToPopulate[prop] = [
+						{
+							...childScope.getExpressions(),
+							...this.getChildExpressions(childScope),
+						},
+					];
 				}
-			})
+			});
 		}
 
 		return childArrays;
@@ -103,7 +105,7 @@ export class RootScope extends ArrayScope implements Scope {
 	getExpressions(): Object {
 		const expressions = {
 			...extractJson(this.body),
-			...this.getChildExpressions(this)
+			...this.getChildExpressions(this),
 		};
 
 		return expressions;

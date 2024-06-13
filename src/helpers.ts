@@ -14,7 +14,7 @@ export async function findAndRegisterHelpers(workspaceFolder: WorkspaceFolder) {
 
 	for (const js of jsFiles) {
 		let helper = await import(js.fsPath);
-		Object.keys(helper).forEach(key => registerHelper(key, helper[key]));
+		Object.keys(helper).forEach((key) => registerHelper(key, helper[key]));
 	}
 
 	helpersRegisteredByWorkspace[workspaceFolder.uri.fsPath] = true;
@@ -25,7 +25,7 @@ export function* watchForHelpers(panels: PreviewPanelScope[]) {
 
 	yield watcher.onDidCreate(async (e) => {
 		let helper = await import(e.fsPath);
-		Object.keys(helper).forEach(key => registerHelper(key, helper[key]));
+		Object.keys(helper).forEach((key) => registerHelper(key, helper[key]));
 
 		for (const panel of panels) {
 			await panel.update();
@@ -37,7 +37,7 @@ export function* watchForHelpers(panels: PreviewPanelScope[]) {
 		delete require.cache[require.resolve(e.fsPath)];
 		// import the module
 		let helper = await import(e.fsPath);
-		Object.keys(helper).forEach(key => registerHelper(key, helper[key]));
+		Object.keys(helper).forEach((key) => registerHelper(key, helper[key]));
 
 		for (const panel of panels) {
 			await panel.update();
