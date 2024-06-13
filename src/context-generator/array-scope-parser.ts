@@ -37,12 +37,10 @@ class ArrayScope implements Scope {
 			this.childScopes.push(childArrayScope);
 
 			lastChildEndPosition = nextChild.index + nextChild[0].length + childArrayScope.endPosition!;
-			// Remove the child scopes body from the HBS
-			//this.hbs = this.hbs.slice(nextChild.index + nextChild[0].length + childArrayScope.endPosition!);
 		}
 
 		if (this.type === 'root') {
-			this.body = this.body + this.hbs.substr(lastChildEndPosition);
+			this.body = this.body + this.hbs.substring(lastChildEndPosition);
 		} else {
 			// Append everthing after the child to the body
 			const postChildHbs = this.hbs.substring(lastChildEndPosition);
