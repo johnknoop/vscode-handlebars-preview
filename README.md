@@ -67,5 +67,6 @@ https://github.com/johnknoop/vscode-handlebars-preview/issues
 
 📍 Override naming of partials using workspace-configuration\
 📍 Intellisense suggestions for partials and context data
+📍 Ctrl+click navigation to partials
 
 See https://github.com/johnknoop/vscode-handlebars-preview/milestone/1 for more details
