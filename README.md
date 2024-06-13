@@ -35,7 +35,7 @@ module.exports = {
     }
 };
 ```
-And could be used like this inside your Handlebars template to properly cast the `title` variable to upperCase:
+And could be used like this inside your Handlebars template like this:
 
 ```hbs
 {{toUpperCase title}}
